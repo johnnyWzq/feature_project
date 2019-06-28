@@ -100,7 +100,7 @@ def find_vb2(para_dict, mode, table_name, pro_info, seq, condition='start_time',
     tb2 = datetime.datetime.strptime(str_value, "%Y-%m-%d %H:%M:%S")
     return vb2, tb2
 
-def find_vc(para_dict, mode, table_name, pro_info, seq, state=2, condition1='end_time', condition2='end_time', t_keywords='stime', keywords='voltage'):
+def find_vc(para_dict, mode, table_name, pro_info, seq, state=2, condition1='start_time', condition2='end_time', t_keywords='stime', keywords='voltage'):
     str_value1 = pro_info[condition1].iloc[seq[-1]] 
     str_value1 = str_value1.strftime("%Y-%m-%d %H:%M:%S")
     str_value2 = pro_info[condition2].iloc[seq[-1]] 

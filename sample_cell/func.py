@@ -84,3 +84,8 @@ def save_workstate_data(regx, mask_filename, raw_data_dir, data_dir):
         ioo.save_data_csv(data, filename, data_dir)
         print('the data has been save within each workstate.')
     return result
+
+import feature_function as ff
+def get_bat_config(config, cell_info, fuzzy):
+    bat_config = ff.get_cell_rate_para(config, cell_info, fuzzy)
+    return bat_config

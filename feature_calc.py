@@ -14,6 +14,12 @@ import os
 
 app_dir = "./sample_cell"
 
+import app_path
+import rw_bat_data as rwd
+import func as fc
+import cell_v_drop as cvd
+import cell_stdv as cs
+
 def init_data_para():
     para_dict = {}
     para_dict['raw_data_dir'] = {'debug': os.path.normpath('./data/processed_data/raw'),
@@ -24,7 +30,6 @@ def init_data_para():
                                     'run': os.path.normpath('/raid/data/processed_data/scale')}
     para_dict['config'] = {'debug': {'s': '192.168.1.105', 'u': 'data', 'p': 'For2019&tomorrow', 'db': 'test_bat', 'port': 3306},
                              'run': {'s': 'localhost', 'u': 'data', 'p': 'For2019&tomorrow', 'db': 'test_bat', 'port': 3306}
-                             #'run': {'s': 'localhost', 'u': 'root', 'p': 'wzqsql', 'db': 'cell_lg36', 'port': 3306}
                              }
     para_dict['data_limit'] = {'debug': 100000,
                                  'run': None}
@@ -39,15 +44,17 @@ def init_data_para():
     para_dict['end_kwd'] = 'end_tick'
     
     para_dict['run_mode'] = 'debug'
+    
+    para_dict['bat_info_config'] = {'debug': {'s': '192.168.1.105', 'u': 'data', 'p': 'For2019&tomorrow', 'db': 'bat_config', 'port': 3306},
+                             'run': {'s': 'localhost', 'u': 'data', 'p': 'For2019&tomorrow', 'db': 'bat_config', 'port': 3306}
+                             }
+    para_dict['border'] = 37
+    
+    para_dict['mission'] = ['cell_stdv']#['all', 'pro_info', 'cell_v_drop']
     return para_dict
 
 def main(argv):
     print('starting....')
-    sys.path.append(app_dir)
-    import rw_bat_data as rwd
-    #import preprocess_data as ppd
-    import func as fc
-    import cell_v_drop as cvd
     
     para_dict =  init_data_para()
     para_dict = fc.deal_argv(argv, para_dict)
@@ -58,13 +65,23 @@ def main(argv):
     if bat_list is not None:
         for bat_name in bat_list:
             
-            pro_info = rwd.get_pro_info(para_dict, mode, bat_name)
-            rwd.save_pro_info(pro_info, para_dict['log_info']+'_'+bat_name, para_dict, mode)
+            para_dict['bat_config'] = fc.get_bat_config(para_dict['bat_info_config'][mode], bat_name, fuzzy=True)
             
-            #获得cell_v_drop
-            pro_info = rwd.read_bat_data(para_dict, mode, para_dict['log_info']+'_'+bat_name)
-            feature = cvd.get_feature(para_dict, mode, bat_name, pro_info)
-            rwd.save_pro_info(feature, 'cell_v_drop_'+bat_name, para_dict, mode)
+            if 'pro_info' in para_dict['mission'] or 'all' in para_dict['mission']:
+                pro_info = rwd.get_pro_info(para_dict, mode, bat_name)
+                rwd.save_pro_info(pro_info, para_dict['log_info']+'_'+bat_name, para_dict, mode)
+            
+            if 'cell_v_drop' in para_dict['mission'] or 'all' in para_dict['mission']:
+                #获得cell_v_drop
+                pro_info = rwd.read_bat_data(para_dict, mode, para_dict['log_info']+'_'+bat_name)
+                feature = cvd.get_feature(para_dict, mode, bat_name, pro_info)
+                rwd.save_pro_info(feature, 'cell_v_drop_'+bat_name, para_dict, mode)
+            
+            if 'cell_stdv' in para_dict['mission'] or 'all' in para_dict['mission']:
+                #获得cell_v_drop
+                pro_info = rwd.read_bat_data(para_dict, mode, para_dict['log_info']+'_'+bat_name)
+                feature = cs.get_feature(para_dict, mode, bat_name, pro_info)
+                rwd.save_pro_info(feature, 'cell_stdv_'+bat_name, para_dict, mode)
     else:
          print('there is no bat!')
          
