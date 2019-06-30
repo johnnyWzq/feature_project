@@ -45,7 +45,7 @@ def filter_data(data, max_border, min_border, err_interval, start_border='min'):
 def shoot(data0, border_seq, start_border='min'):
     length = int(round(len(border_seq) / 2, 0))
     if start_border == 'min':
-        if data0 <= border_seq[0]:
+        if data0 <= border_seq[0] or len(border_seq) == 1:
             return border_seq[0]
         else:
             border_seq1 = border_seq[:length]
