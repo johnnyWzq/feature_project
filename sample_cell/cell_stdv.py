@@ -115,6 +115,8 @@ def get_same_current(data, keywords='current_reg', min_len=10, min_cur=10):
     data_gp = data.groupby(keywords)
     for key in data_gp.groups.keys():
         df = data_gp.get_group(key)
+        if len(df) <= 1:
+            continue
         start = 0
         clip_list = []
         for i in range(1, len(df)):
