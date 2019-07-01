@@ -26,42 +26,32 @@ def deal_other_argv(argv, para_dict):
     1:bat_mode; 2:bat_type; 3:bat-structure; 4:bat-year; 5:score_key
     """
     i = 0
+    mission = ['all', 'pro_info', 'cell_v_drop', 'cell_stdv']
     for ar in argv:
-        if i == 2: #bat_mode
-            regx = '-[0-9a-zA-Z]{3,8}'
+        if i == 2: #
+            regx = r'\-[a-zA-Z\_]{3,20}'
             if re.match(regx, ar):
-                para_dict['bat_model'] = ar[1:]
-                print('The 2nd input parameter is accepted.')
+                if ar[1:] in mission:
+                    para_dict['mission'].extend(ar[1:])
+                    print('The 2nd input parameter is accepted.')
             else:
                 print("The 2nd input parameter '%s' is not accepted."%ar)
-        elif i == 3: #bat type
-            regx = '-[0-9a-zA-Z]{3,6}'
+        if i == 3: #
+            regx = r'\-[a-zA-Z\_]{3,20}'
             if re.match(regx, ar):
-                para_dict['bat_type'] = ar[1:]
-                print('The 3rd input parameter is accepted.')
+                if ar[1:] in mission:
+                    para_dict['mission'].extend(ar[1:])
+                    print('The 3rd input parameter is accepted.')
             else:
                 print("The 3rd input parameter '%s' is not accepted."%ar)
-        elif i == 4: #bat structrue
-            regx = '-[a-zA-Z]{2,6}'
+        if i == 4: #
+            regx = r'\-[a-zA-Z\_]{3,20}'
             if re.match(regx, ar):
-                para_dict['structure'] = ar[1:]
-                print('The 4th input parameter is accepted.')
+                if ar[1:] in mission:
+                    para_dict['mission'].extend(ar[1:])
+                    print('The 4th input parameter is accepted.')
             else:
-                print("The 4thd input parameter '%s' is not accepted."%ar)
-        elif i == 5: #bat year
-            regx = '-[0-9]{2,4}'
-            if re.match(regx, ar):
-                para_dict['year'] = ar[1:]
-                print('The 5rd input parameter is accepted.')
-            else:
-                print("The 5rd input parameter '%s' is not accepted."%ar)
-        elif i == 6: #score_key
-            regx = '-[a-zA-Z]{1,6}'
-            if re.match(regx, ar):
-                para_dict['score_key'] = ar[1:]
-                print('The 5rd input parameter is accepted.')
-            else:
-                print("The 5rd input parameter '%s' is not accepted."%ar)
+                print("The 4th input parameter '%s' is not accepted."%ar)
         i += 1
     return para_dict
 

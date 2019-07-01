@@ -31,7 +31,7 @@ def init_data_para():
     para_dict['config'] = {'debug': {'s': '192.168.1.105', 'u': 'data', 'p': 'For2019&tomorrow', 'db': 'test_bat', 'port': 3306},
                              'run': {'s': 'localhost', 'u': 'data', 'p': 'For2019&tomorrow', 'db': 'test_bat', 'port': 3306}
                              }
-    para_dict['data_limit'] = {'debug': 100000,
+    para_dict['data_limit'] = {'debug': 10000,
                                  'run': None}
     
     para_dict['score_key'] = 'c'
@@ -50,7 +50,7 @@ def init_data_para():
                              }
     
     para_dict['mission'] = ['cell_v_drop', 'cell_stdv']
-    #para_dict['mission'] = ['cell_stdv']#['all', 'pro_info', 'cell_v_drop']
+    para_dict['mission'] = []#['all', 'pro_info', 'cell_v_drop']
     return para_dict
 
 def main(argv):
