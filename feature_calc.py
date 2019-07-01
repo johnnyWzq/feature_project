@@ -49,7 +49,7 @@ def init_data_para():
                              'run': {'s': 'localhost', 'u': 'data', 'p': 'For2019&tomorrow', 'db': 'bat_config', 'port': 3306}
                              }
     
-    para_dict['mission'] = ['all', 'pro_info', 'cell_v_drop']
+    para_dict['mission'] = ['cell_v_drop', 'cell_stdv']
     #para_dict['mission'] = ['cell_stdv']#['all', 'pro_info', 'cell_v_drop']
     return para_dict
 

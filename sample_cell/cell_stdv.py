@@ -199,7 +199,6 @@ def get_feature(para_dict, mode, bat_name, pro_info, v_keywords='voltage', c_key
                 process_data['current_reg'] = filter_data(process_data[c_keywords].tolist(),
                                         border_dict[key][1], border_dict[key][0], border_dict['rest'][1])
                 process_data['process_no'] = process_no
-                process_data['state'] = key
                 process_data = get_same_current(process_data, min_cur=1)#, min_cur=int(C_RATE/3))
                 data.append(process_data)
         data = pd.concat(tuple(data)) #获得清理过的数据，包含符合条件的过程数据
@@ -207,7 +206,7 @@ def get_feature(para_dict, mode, bat_name, pro_info, v_keywords='voltage', c_key
         if data is not None:
             feature = feature.append(data)
             del data
-    data = data.sort_values('process_no')
+    feature = feature.sort_values('process_no')
     feature = feature.reset_index(drop=True)
     return feature
 

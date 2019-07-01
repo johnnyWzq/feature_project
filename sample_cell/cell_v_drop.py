@@ -163,6 +163,7 @@ def get_feature(para_dict, mode, bat_name, pro_info, keywords='voltage'):
         feature_list.append((seq[0], state, ir_v_d, re_v_d, delta_t, va, vb1, vb2, vc, ta, tb1, tb2, tc))
     feature = pd.DataFrame(feature_list, 
                            columns=('process_no', 'state', 'ir_v_d', 're_v_d', 'delta_t', 'va', 'vb1', 'vb2', 'vc', 'ta', 'tb1', 'tb2', 'tc'))
+    feature = feature.sort_values('process_no')
     return feature
         
 def test():
