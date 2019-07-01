@@ -36,9 +36,10 @@ def save_pro_info(data, table_name, para_dict, mode, if_exists='replace', chunks
     ioo.save_data_sql(data, config, table_name, chunksize=chunksize)
     
 def get_pro_info(para_dict, mode, table_name):
-    bar = pbar.Processbar(100)
+    total = 10
+    bar = pbar.Processbar(total)
     showbar = pbar.showbar(bar)
-    df = gf.find_sequence(table_name, showbar, **para_dict)
+    df = gf.find_sequence(table_name, showbar, total=total, **para_dict)
     bar.finish()
     return df
 

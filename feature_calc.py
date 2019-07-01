@@ -48,9 +48,9 @@ def init_data_para():
     para_dict['bat_info_config'] = {'debug': {'s': '192.168.1.105', 'u': 'data', 'p': 'For2019&tomorrow', 'db': 'bat_config', 'port': 3306},
                              'run': {'s': 'localhost', 'u': 'data', 'p': 'For2019&tomorrow', 'db': 'bat_config', 'port': 3306}
                              }
-    para_dict['border'] = 37
     
-    para_dict['mission'] = ['cell_stdv']#['all', 'pro_info', 'cell_v_drop']
+    para_dict['mission'] = ['all', 'pro_info', 'cell_v_drop']
+    #para_dict['mission'] = ['cell_stdv']#['all', 'pro_info', 'cell_v_drop']
     return para_dict
 
 def main(argv):
