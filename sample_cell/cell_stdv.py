@@ -208,8 +208,9 @@ def get_feature(para_dict, mode, bat_name, pro_info, v_keywords='voltage', c_key
         if data is not None:
             feature = feature.append(data)
             del data
-    feature = feature.sort_values('process_no')
-    feature = feature.reset_index(drop=True)
+    if len(feature) != 0:
+        feature = feature.sort_values('process_no')
+        feature = feature.reset_index(drop=True)
     return feature
 
 def test():
