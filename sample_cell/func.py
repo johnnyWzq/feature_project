@@ -32,7 +32,7 @@ def deal_other_argv(argv, para_dict):
             regx = r'\-[a-zA-Z\_]{3,20}'
             if re.match(regx, ar):
                 if ar[1:] in mission:
-                    para_dict['mission'].extend(ar[1:])
+                    para_dict['mission'].append(ar[1:])
                     print('The 2nd input parameter is accepted.')
             else:
                 print("The 2nd input parameter '%s' is not accepted."%ar)
@@ -40,7 +40,7 @@ def deal_other_argv(argv, para_dict):
             regx = r'\-[a-zA-Z\_]{3,20}'
             if re.match(regx, ar):
                 if ar[1:] in mission:
-                    para_dict['mission'].extend(ar[1:])
+                    para_dict['mission'].append(ar[1:])
                     print('The 3rd input parameter is accepted.')
             else:
                 print("The 3rd input parameter '%s' is not accepted."%ar)
@@ -48,11 +48,12 @@ def deal_other_argv(argv, para_dict):
             regx = r'\-[a-zA-Z\_]{3,20}'
             if re.match(regx, ar):
                 if ar[1:] in mission:
-                    para_dict['mission'].extend(ar[1:])
+                    para_dict['mission'].append(ar[1:])
                     print('The 4th input parameter is accepted.')
             else:
                 print("The 4th input parameter '%s' is not accepted."%ar)
         i += 1
+    print(para_dict['mission'])
     return para_dict
 
 import g_function as gf
