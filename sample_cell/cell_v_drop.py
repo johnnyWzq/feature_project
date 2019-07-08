@@ -126,7 +126,7 @@ def find_vc_1(para_dict, mode, table_name, pro_info, seq, condition='end_time', 
     tc = datetime.datetime.strptime(str_value, "%Y-%m-%d %H:%M:%S")
     return vc, tc
 
-def get_feature(para_dict, mode, bat_name, pro_info, keywords='voltage'):
+def get_feature_vdrop(para_dict, mode, bat_name, pro_info, keywords='voltage'):
     """
     找到相关的特征参数：先找在第一个静置0最后的电压va，再找放电1倒数第一个电压vb1，和静置0第一个电压vb2,以及对应的时刻tb1，tb2；
     找到最后一个静置0电压不再变化的对应电压值vc以及对应的时刻tc,可认为是当前阶段最高电压

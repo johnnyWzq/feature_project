@@ -128,9 +128,9 @@ def get_same_current(data, keywords='current_reg', min_len=10, min_cur=10):
                     start = i
         res = clip_list[0]
         if len(clip_list) > 1:
-            clip_len = len(res)
+            clip_len = res[1] - res[0]
             for clip in clip_list:
-                if len(clip) >= clip_len:
+                if clip[1] - clip[0] >= clip_len:
                     res = clip
         if (res[1] - res[0]) >= min_len and abs(key) >= min_cur:
             pro_data = pro_data.append(df.loc[res[0]: res[1]])
@@ -171,7 +171,7 @@ def get_same_current_process(data, c_keywords='current_reg', p_keywords='process
                 tick += 1
     return res
                 
-def get_feature(para_dict, mode, bat_name, pro_info, v_keywords='voltage', c_keywords='current'):
+def get_feature_stdv(para_dict, mode, bat_name, pro_info, v_keywords='voltage', c_keywords='current'):
     """
     找到相关的特征参数：先将所有过程按充放静置状态进行分离和过滤，将符合条件的过程编号process_no放入dict中
     将所有电流进行模拟滤波filter_data，以便减小电流值分布，设置最大最小值为2C倍率电流值

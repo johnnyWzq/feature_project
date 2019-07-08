@@ -19,6 +19,7 @@ import rw_bat_data as rwd
 import func as fc
 import cell_v_drop as cvd
 import cell_stdv as cs
+import soh_feature as sf
 
 def init_data_para():
     para_dict = {}
@@ -50,7 +51,7 @@ def init_data_para():
                              }
     
     para_dict['mission'] = ['cell_v_drop', 'cell_stdv']
-    para_dict['mission'] = []#['all', 'pro_info', 'cell_v_drop']
+    para_dict['mission'] = ['cell_stdv']#['all', 'pro_info', 'cell_v_drop']
     return para_dict
 
 def main(argv):
@@ -74,14 +75,18 @@ def main(argv):
             if 'cell_v_drop' in para_dict['mission'] or 'all' in para_dict['mission']:
                 #获得cell_v_drop
                 pro_info = rwd.read_bat_data(para_dict, mode, para_dict['log_info']+'_'+bat_name)
-                feature = cvd.get_feature(para_dict, mode, bat_name, pro_info)
+                feature = cvd.get_feature_vdrop(para_dict, mode, bat_name, pro_info)
                 rwd.save_pro_info(feature, 'cell_v_drop_'+bat_name, para_dict, mode)
             
             if 'cell_stdv' in para_dict['mission'] or 'all' in para_dict['mission']:
                 #获得cell_v_drop
                 pro_info = rwd.read_bat_data(para_dict, mode, para_dict['log_info']+'_'+bat_name)
-                feature = cs.get_feature(para_dict, mode, bat_name, pro_info)
+                feature = cs.get_feature_stdv(para_dict, mode, bat_name, pro_info)
                 rwd.save_pro_info(feature, 'cell_stdv_'+bat_name, para_dict, mode)
+            if 'soh_feature' in para_dict['mission'] or 'all' in para_dict['mission']:
+                pro_info = rwd.read_bat_data(para_dict, mode, para_dict['log_info']+'_'+bat_name)
+                feature = sf.get_feature_soh(para_dict, mode, bat_name, pro_info)
+                rwd.save_pro_info(feature, 'cell_soh_'+bat_name, para_dict, mode)
     else:
          print('there is no bat!')
          
