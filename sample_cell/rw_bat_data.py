@@ -50,4 +50,15 @@ def get_bat_1_data(para_dict, mode, table_name, condition, str_value):
     config = para_dict['config'][mode]
     df = ioo.match_sql_data(config, table_name, condition, str_value)
     return df.iloc[[0]]
+
+def transfer_data(cnt, data, keywords):
+    df = gf.transfer_data(cnt, data, keywords)
+    return df
     
+def save_train_xlsx(data, filename, output_dir):
+    train_feature_gp = data.groupby('section') #按数据区间划分
+    feature_dict = {}
+    for k in train_feature_gp.groups.keys():
+        print('----------------%s----------------'%k)
+        feature_dict[k] = train_feature_gp.get_group(k)
+    ioo.save_dict_xlsx(feature_dict, filename, output_dir)

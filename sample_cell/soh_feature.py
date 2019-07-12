@@ -12,10 +12,6 @@ import matplotlib.pyplot as plt
 from scipy.optimize import leastsq
 import rw_bat_data as rwd
 
-import lib_path
-import g_function as gf
-
-
 def slip_by_turing_point(data, direction=0): #未使用
     df_list = []
     if direction == 0:
@@ -235,24 +231,6 @@ def scale_curve(df, is_scale=False, max_y=10000.0, min_y=0):
     return df, scale
 
 def sel_curve_para(df, state, scale, direction='left'):
-    """
-    #根据电压判断数据大致在那个段，从而判断其斜率放大率
-    """
-    volt_min = df['voltage_mean'].min()
-    volt_max = df['voltage_mean'].max()
-    """
-    if state == 1:#charge
-        if volt_min >= 3.65 or volt_max <= 3.5:
-            rate = 100
-        else:
-            rate = 250
-    elif state ==2:
-        if volt_min >= 3.5 or volt_max <=3.2:
-            rate = 100
-        else:
-            rate = 250
-    rate /= scale
-    """
     data_len = len(df)
     if direction == 'left':
         if data_len <= 25:
@@ -413,7 +391,7 @@ def find_ic_feature(df, state, C_RATE):
         dqdv = calc_dqdv(clip_data, 0, C_RATE)
         if dqdv != 88888888:
             dqdv_list.append(dqdv)
-            total_data = total_data.append(gf.transfer_data(j, clip_data, keywords='stime')) #获得每一个电压数据片对电压的统计值
+            total_data = total_data.append(rwd.transfer_data(j, clip_data, keywords='stime')) #获得每一个电压数据片对电压的统计值
             j += 1 #只有当dqdv有效，j才增加
     del clip_data_list
     dqdv_list = outlier_err_dqdv(dqdv_list)#对异常点进行替换
@@ -506,7 +484,7 @@ def get_feature_soh(para_dict, mode, bat_name, pro_info, keywords='voltage'):
     #V_RATE = para_dict['bat_config']['V_RATE']
     #bat_type = para_dict['bat_config']['bat_type']
     train_feature = []
-    for i in range(0, 20):#range(len(pro_info)):
+    for i in range(0, 3):#range(len(pro_info)):
         print('starting calculating the features of battery for soh...')
         state = pro_info['state'].iloc[i]
         df = get_1_pro_data(para_dict, mode, bat_name, pro_info, i)
@@ -521,13 +499,8 @@ def get_feature_soh(para_dict, mode, bat_name, pro_info, keywords='voltage'):
         train_feature.append(feature_df)
         del train_data_dict
     train_feature = pd.concat(tuple(train_feature))
-    train_feature_gp = train_feature.groupby('section') #按数据区间划分
-    feature_dict = {}
-    for k in train_feature_gp.groups.keys():
-        print('----------------%s----------------'%k)
-        feature_dict[k] = train_feature_gp.get_group(k)
-    return feature_dict
-            
+    rwd.save_train_xlsx(train_feature, 'cell_soh_'+bat_name, './data/')
+    return train_feature
 
 
 # 误差函数， 计算拟合曲线与真实数据点之间的差 ，作为leastsq函数的输入
