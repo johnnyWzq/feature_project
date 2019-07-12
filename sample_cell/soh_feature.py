@@ -484,18 +484,20 @@ def get_feature_soh(para_dict, mode, bat_name, pro_info, keywords='voltage'):
     #V_RATE = para_dict['bat_config']['V_RATE']
     #bat_type = para_dict['bat_config']['bat_type']
     train_feature = []
-    for i in range(0, 3):#range(len(pro_info)):
+    for i in range(0, 100):#range(len(pro_info)):
         print('starting calculating the features of battery for soh...')
         state = pro_info['state'].iloc[i]
         df = get_1_pro_data(para_dict, mode, bat_name, pro_info, i)
         df = df.reset_index(drop=True)
         df = calc_other_vectors(df, state)
+        cycle_soh = df['c'].iloc[-1] / C_RATE
         train_data_dict = generate_train_data(df, state)#生产新的训练数据
         for key, train_data in train_data_dict.items():
             feature_df = find_ic_feature(train_data, state, C_RATE)
             feature_df['state'] = state
             feature_df['section'] = key
             feature_df['process_no'] = pro_info['process_no'].iloc[i]
+            feature_df['soh'] = cycle_soh
         train_feature.append(feature_df)
         del train_data_dict
     train_feature = pd.concat(tuple(train_feature))
