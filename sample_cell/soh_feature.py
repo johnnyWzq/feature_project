@@ -174,11 +174,12 @@ def calc_dqdv(df, bias, C_RATE, parallel=1, sample=1):
     """
     #计算dq/dv，由于没有dq，使用i代替，但需要考虑采样频率换算成1s
     """
-    dqdv = (df['current'].sum() / sample) / (df['voltage'].iloc[-1] - df['voltage'].iloc[0])
-    dqdv = dqdv / C_RATE / parallel
-    if dqdv == np.inf or dqdv == -np.inf: #电压变化较快，一条数据就超过设定值
-        dqdv = 88888888
-    return dqdv
+    if df['voltage'].iloc[-1] != df['voltage'].iloc[0]:
+        dqdv = (df['current'].sum() / sample) / (df['voltage'].iloc[-1] - df['voltage'].iloc[0])
+        dqdv = dqdv / C_RATE / parallel
+        if dqdv == np.inf or dqdv == -np.inf: #电压变化较快，一条数据就超过设定值
+            dqdv = 88888888
+        return dqdv
 
 def outlier_err_dqdv(dqdv_list, method=2):
     """
@@ -249,7 +250,7 @@ def sel_curve_para(df, state, scale, direction='left'):
         else:
             rate = 30
             peak_incline = 0.76
-            valley_incline = 0.8
+            valley_incline = 0.82
     peak_value = rate / scale * peak_incline
     valley_value = rate / scale * valley_incline
     return peak_incline, valley_incline, peak_value, valley_value
@@ -484,7 +485,7 @@ def get_feature_soh(para_dict, mode, bat_name, pro_info, keywords='voltage'):
     #V_RATE = para_dict['bat_config']['V_RATE']
     #bat_type = para_dict['bat_config']['bat_type']
     train_feature = []
-    for i in range(0, 100):#range(len(pro_info)):
+    for i in range(len(pro_info)):
         print('starting calculating the features of battery for soh...')
         state = pro_info['state'].iloc[i]
         df = get_1_pro_data(para_dict, mode, bat_name, pro_info, i)
