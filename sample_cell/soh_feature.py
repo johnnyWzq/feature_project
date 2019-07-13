@@ -386,6 +386,7 @@ def find_ic_feature(df, state, C_RATE):
     clip_data_list, pos_seq = slip_data_by_volt(df)
     total_data = pd.DataFrame()
     dqdv_list = []
+    feature_cols =  ['voltage_', 'dqdv', 'peak_incline', 'valley_incline']
     j = 0
     for clip_data in clip_data_list:
         dqdv = calc_dqdv(clip_data, 0, C_RATE)
@@ -404,7 +405,7 @@ def find_ic_feature(df, state, C_RATE):
         y2 = peak_2
         x2 = feature_2['voltage_mean'].loc[peak_2_pos]
         
-        feature_2 = change_columns(feature_2, '_2', *['voltage_', 'dqdv_'])
+        feature_2 = change_columns(feature_2, '_2', *feature_cols)
         feature_df = feature_df.append(feature_2) #将2peak点的特征放入
         feature_df = feature_df.reset_index(drop=True)
         
@@ -415,8 +416,8 @@ def find_ic_feature(df, state, C_RATE):
         feature_1_peak['peak_incline'] = (y2 - y1) / (x2 - x1)
         feature_1_peak = feature_1_peak.reset_index(drop=True)
         if peak_1_pos_p == 0:#无拐点
-            feature_1_peak.loc[:] = -9999 #
-        feature_1_peak = change_columns(feature_1_peak, '_p', *['voltage_', 'dqdv_', 'peak_incline'])
+            feature_1_peak.loc[:] = -99999999 #
+        feature_1_peak = change_columns(feature_1_peak, '_p', *feature_cols)
         
         feature_1_valley = total_data.loc[[peak_1_pos_v]].copy()
         y1 = feature_1_valley['dqdv'].loc[peak_1_pos_v]
@@ -424,11 +425,11 @@ def find_ic_feature(df, state, C_RATE):
         feature_1_valley['valley_incline'] = (y2 - y1) / (x2 - x1)
         feature_1_valley = feature_1_valley.reset_index(drop=True)
         if peak_1_pos_v == 0:
-            feature_1_valley.loc[:] = -9999
-        feature_1_valley = change_columns(feature_1_valley, '_v', *['voltage_', 'dqdv_', 'valley_incline'])
+            feature_1_valley.loc[:] = -99999999
+        feature_1_valley = change_columns(feature_1_valley, '_v', *feature_cols)
         
         feature_1_peak = feature_1_peak.merge(feature_1_valley, left_index=True, right_index=True)
-        feature_1_peak = change_columns(feature_1_peak, '_1', *['voltage_', 'dqdv_', 'peak_incline', 'valley_incline'])
+        feature_1_peak = change_columns(feature_1_peak, '_1', *feature_cols)
         feature_df = feature_df.merge(feature_1_peak, left_index=True, right_index=True)
         del feature_1_peak
         del feature_1_valley
@@ -440,8 +441,8 @@ def find_ic_feature(df, state, C_RATE):
         feature_3_peak['peak_incline'] = (y2 - y1) / (x2 - x1)
         feature_3_peak = feature_3_peak.reset_index(drop=True)
         if peak_3_pos_p == 0:#无拐点
-            feature_3_peak.loc[:] = -9999 #
-        feature_3_peak = change_columns(feature_3_peak, '_p', *['voltage_', 'dqdv_', 'peak_incline'])
+            feature_3_peak.loc[:] = -99999999 #
+        feature_3_peak = change_columns(feature_3_peak, '_p', *feature_cols)
         
         feature_3_valley = total_data.loc[[peak_3_pos_v]].copy()
         y1 = feature_3_valley['dqdv'].loc[peak_3_pos_v]
@@ -449,11 +450,11 @@ def find_ic_feature(df, state, C_RATE):
         feature_3_valley['valley_incline'] = (y2 - y1) / (x2 - x1)
         feature_3_valley = feature_3_valley.reset_index(drop=True)
         if peak_3_pos_v == 0:
-            feature_3_valley.loc[:] = -9999
-        feature_3_valley = change_columns(feature_3_valley, '_v', *['voltage_', 'dqdv_'], 'valley_incline')
+            feature_3_valley.loc[:] = -99999999
+        feature_3_valley = change_columns(feature_3_valley, '_v', *feature_cols)
         
         feature_3_peak = feature_3_peak.merge(feature_3_valley, left_index=True, right_index=True)
-        feature_3_peak = change_columns(feature_3_peak, '_3', *['voltage_', 'dqdv_', 'peak_incline', 'valley_incline'])
+        feature_3_peak = change_columns(feature_3_peak, '_3', *feature_cols)
         feature_df = feature_df.merge(feature_3_peak, left_index=True, right_index=True)
         del feature_3_peak
         del feature_3_valley

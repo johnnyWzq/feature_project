@@ -22,6 +22,9 @@ if 'cell_v_drop' in table_list[0]:
 elif 'cell_stdv' in table_list[0]:
     file_name = 'cell_stdv'
     cut = 10
+elif 'cell_soh' in table_list[0]:
+    file_name = 'cell_soh'
+    cut = 8
 if table_list is not None:
     data = []
     data_dir = para_dict['processed_data_dir'][mode]
