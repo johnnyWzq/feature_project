@@ -247,9 +247,9 @@ def sel_curve_para(df, state, scale, direction='left'):
             peak_incline = 0.65
             valley_incline = 0.75
         else:
-            rate = 30
+            rate = 35
             peak_incline = 0.76
-            valley_incline = 0.82
+            valley_incline = 0.86
     peak_value = rate / scale * peak_incline
     valley_value = rate / scale * valley_incline
     return peak_incline, valley_incline, peak_value, valley_value
@@ -333,7 +333,7 @@ def find_1st_peak(df, state, p=6, rate=400, incline=0.3, duration=3):
     df, scale = scale_curve(df, is_scale=False)
     peak_incline, valley_incline, peak_value, valley_value = sel_curve_para(df, state, scale)
     peak_pos_list, valley_pos_list = find_break_point(df, duration, peak_incline, valley_incline, peak_value, valley_value)
-    #analysis_dqdv_curve2(df, state, peak_pos_list, valley_pos_list)
+    analysis_dqdv_curve2(df, state, peak_pos_list, valley_pos_list)
     peak_pos, valley_pos = get_valid_pos(peak_pos_list, valley_pos_list, state)
     return peak_pos, valley_pos
 
@@ -344,7 +344,7 @@ def find_3rd_peak(df, state, p=6, rate=400, incline=0.3, duration=3):
     df, scale = scale_curve(df, is_scale=False)
     peak_incline, valley_incline, peak_value, valley_value = sel_curve_para(df, state, scale, direction='right')
     peak_pos_list, valley_pos_list = find_break_point(df, duration, peak_incline, valley_incline, peak_value, valley_value, 'right')
-    #analysis_dqdv_curve2(df, state, peak_pos_list, valley_pos_list)
+    analysis_dqdv_curve2(df, state, peak_pos_list, valley_pos_list)
     peak_pos, valley_pos = get_valid_pos(peak_pos_list, valley_pos_list, state)
     return peak_pos, valley_pos
 
@@ -416,7 +416,7 @@ def find_ic_feature(df, state, C_RATE):
         feature_1_peak = feature_1_peak.reset_index(drop=True)
         if peak_1_pos_p == 0:#无拐点
             feature_1_peak.loc[:] = -9999 #
-        feature_1_peak = change_columns(feature_1_peak, '_p', *['voltage_', 'dqdv_'])
+        feature_1_peak = change_columns(feature_1_peak, '_p', *['voltage_', 'dqdv_', 'peak_incline'])
         
         feature_1_valley = total_data.loc[[peak_1_pos_v]].copy()
         y1 = feature_1_valley['dqdv'].loc[peak_1_pos_v]
@@ -425,10 +425,10 @@ def find_ic_feature(df, state, C_RATE):
         feature_1_valley = feature_1_valley.reset_index(drop=True)
         if peak_1_pos_v == 0:
             feature_1_valley.loc[:] = -9999
-        feature_1_valley = change_columns(feature_1_valley, '_v', *['voltage_', 'dqdv_'])
+        feature_1_valley = change_columns(feature_1_valley, '_v', *['voltage_', 'dqdv_', 'valley_incline'])
         
         feature_1_peak = feature_1_peak.merge(feature_1_valley, left_index=True, right_index=True)
-        feature_1_peak = change_columns(feature_1_peak, '_1', *['voltage_', 'dqdv_'])
+        feature_1_peak = change_columns(feature_1_peak, '_1', *['voltage_', 'dqdv_', 'peak_incline', 'valley_incline'])
         feature_df = feature_df.merge(feature_1_peak, left_index=True, right_index=True)
         del feature_1_peak
         del feature_1_valley
@@ -441,7 +441,7 @@ def find_ic_feature(df, state, C_RATE):
         feature_3_peak = feature_3_peak.reset_index(drop=True)
         if peak_3_pos_p == 0:#无拐点
             feature_3_peak.loc[:] = -9999 #
-        feature_3_peak = change_columns(feature_3_peak, '_p', *['voltage_', 'dqdv_'])
+        feature_3_peak = change_columns(feature_3_peak, '_p', *['voltage_', 'dqdv_', 'peak_incline'])
         
         feature_3_valley = total_data.loc[[peak_3_pos_v]].copy()
         y1 = feature_3_valley['dqdv'].loc[peak_3_pos_v]
@@ -450,10 +450,10 @@ def find_ic_feature(df, state, C_RATE):
         feature_3_valley = feature_3_valley.reset_index(drop=True)
         if peak_3_pos_v == 0:
             feature_3_valley.loc[:] = -9999
-        feature_3_valley = change_columns(feature_3_valley, '_v', *['voltage_', 'dqdv_'])
+        feature_3_valley = change_columns(feature_3_valley, '_v', *['voltage_', 'dqdv_'], 'valley_incline')
         
         feature_3_peak = feature_3_peak.merge(feature_3_valley, left_index=True, right_index=True)
-        feature_3_peak = change_columns(feature_3_peak, '_3', *['voltage_', 'dqdv_'])
+        feature_3_peak = change_columns(feature_3_peak, '_3', *['voltage_', 'dqdv_', 'peak_incline', 'valley_incline'])
         feature_df = feature_df.merge(feature_3_peak, left_index=True, right_index=True)
         del feature_3_peak
         del feature_3_valley
@@ -484,7 +484,7 @@ def get_feature_soh(para_dict, mode, bat_name, pro_info, keywords='voltage'):
     #V_RATE = para_dict['bat_config']['V_RATE']
     #bat_type = para_dict['bat_config']['bat_type']
     train_feature = []
-    for i in range(len(pro_info)):
+    for i in range(0, 100):#range(len(pro_info)):
         print('starting calculating the features of battery for soh...')
         state = pro_info['state'].iloc[i]
         df = get_1_pro_data(para_dict, mode, bat_name, pro_info, i)
