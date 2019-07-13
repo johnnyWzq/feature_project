@@ -174,12 +174,11 @@ def calc_dqdv(df, bias, C_RATE, parallel=1, sample=1):
     """
     #计算dq/dv，由于没有dq，使用i代替，但需要考虑采样频率换算成1s
     """
-    if df['voltage'].iloc[-1] != df['voltage'].iloc[0]:
-        dqdv = (df['current'].sum() / sample) / (df['voltage'].iloc[-1] - df['voltage'].iloc[0])
-        dqdv = dqdv / C_RATE / parallel
-        if dqdv == np.inf or dqdv == -np.inf: #电压变化较快，一条数据就超过设定值
-            dqdv = 88888888
-        return dqdv
+    dqdv = (df['current'].sum() / sample) / (df['voltage'].iloc[-1] - df['voltage'].iloc[0])
+    dqdv = dqdv / C_RATE / parallel
+    if dqdv == np.inf or dqdv == -np.inf: #电压变化较快，一条数据就超过设定值
+        dqdv = 88888888
+    return dqdv
 
 def outlier_err_dqdv(dqdv_list, method=2):
     """
@@ -334,7 +333,7 @@ def find_1st_peak(df, state, p=6, rate=400, incline=0.3, duration=3):
     df, scale = scale_curve(df, is_scale=False)
     peak_incline, valley_incline, peak_value, valley_value = sel_curve_para(df, state, scale)
     peak_pos_list, valley_pos_list = find_break_point(df, duration, peak_incline, valley_incline, peak_value, valley_value)
-    analysis_dqdv_curve2(df, state, peak_pos_list, valley_pos_list)
+    #analysis_dqdv_curve2(df, state, peak_pos_list, valley_pos_list)
     peak_pos, valley_pos = get_valid_pos(peak_pos_list, valley_pos_list, state)
     return peak_pos, valley_pos
 
@@ -345,7 +344,7 @@ def find_3rd_peak(df, state, p=6, rate=400, incline=0.3, duration=3):
     df, scale = scale_curve(df, is_scale=False)
     peak_incline, valley_incline, peak_value, valley_value = sel_curve_para(df, state, scale, direction='right')
     peak_pos_list, valley_pos_list = find_break_point(df, duration, peak_incline, valley_incline, peak_value, valley_value, 'right')
-    analysis_dqdv_curve2(df, state, peak_pos_list, valley_pos_list)
+    #analysis_dqdv_curve2(df, state, peak_pos_list, valley_pos_list)
     peak_pos, valley_pos = get_valid_pos(peak_pos_list, valley_pos_list, state)
     return peak_pos, valley_pos
 
