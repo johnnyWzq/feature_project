@@ -201,120 +201,12 @@ def outlier_err_dqdv(dqdv_list, method=2):
                 
     return dqdv_list
     
-
-
-def scale_curve(df, is_scale=False, max_y=10000.0, min_y=0):
-    """
-    #将曲线进行标准化
-    """
-    #平移Y
-    scale = 1
-    if is_scale:
-        df['dqdv_slm'] = df['dqdv_slm'] - df['dqdv_slm'].iloc[0]
-        df['dqdv'] = df['dqdv'] - df['dqdv'].iloc[0]
-        #缩放Y-X
-        scale = df['dqdv_slm'].max() / max_y
-        df['dqdv_slm'] = df['dqdv_slm'] / scale
-        scale = df['dqdv'].max() / max_y
-        df['dqdv'] = df['dqdv'] / scale
-        df['x'] = df['x'] / scale
-    return df, scale
-
-def sel_curve_para(df, state, scale, direction='left'):
-    data_len = len(df)
-    """
-    if direction == 'left':
-        if data_len <= 25:
-            rate = 250
-            peak_incline = 0.65
-            valley_incline = 1.5
-        else:
-            rate = 100
-            peak_incline = 0.76
-            valley_incline = 1.2
-    elif direction == 'right':
-        if data_len <= 25:
-            rate = 60
-            peak_incline = 0.65
-            valley_incline = 0.75
-        else:
-            rate = 35
-            peak_incline = 0.76
-            valley_incline = 0.86
-    """
-    if direction == 'left':
-        if data_len <= 25:
-            rate = 400
-            peak_incline = 0.65
-            valley_incline = 6
-        else:
-            rate = 100
-            peak_incline = 0.76
-            valley_incline = 15
-    elif direction == 'right':
-        if data_len <= 25:
-            rate = 350
-            peak_incline = 0.65
-            valley_incline = 0.75
-        else:
-            rate = 200
-            peak_incline = 0.76
-            valley_incline = 0.86
-    peak_value = rate / scale * peak_incline
-    valley_value = rate / scale * valley_incline
-    return peak_incline, valley_incline, peak_value, valley_value
-
-def find_1st_peak(df, state, p=6):
-    """
-    #
-    """
-    df = smooth_curve(df, p)
-    df, scale = scale_curve(df, is_scale=False)
-    border = find_border(df)
-    analysis_dqdv_curve2(df, state, border)
-    return border
-
-def find_3rd_peak(df, state, p=6, rate=400, incline=0.3, duration=3):
-    """
-    """
-    df = smooth_curve(df, p)
-    df, scale = scale_curve(df, is_scale=False)
-    peak_incline, valley_incline, peak_value, valley_value = sel_curve_para(df, state, scale, direction='right')
-    peak_pos_list, valley_pos_list = find_break_point(df, duration, peak_incline, valley_incline, peak_value, valley_value, 'right')
-    analysis_dqdv_curve2(df, state, peak_pos_list, valley_pos_list)
-    peak_pos, valley_pos = get_valid_pos(peak_pos_list, valley_pos_list, state)
-    return peak_pos, valley_pos
-
-def find_2nd_peak(data, duration=3):
-    """
-    #找到ic曲线的第2峰
-    2峰为dqdv最大值且不在起始或终止位置
-    """
-    #df = df.reset_index(drop=True)
-    temp_value = max(data)#temp_value = data.max()
-    temp_pos = data.index(temp_value)#data.idxmax(skipna=True)
-    length = len(data)
-    peak_2 = None
-    peak_2_pos = None
-    if (temp_pos + duration) < length and (temp_pos - duration) > 0:
-        peak_2 = temp_value
-        peak_2_pos = temp_pos
-    return peak_2, peak_2_pos
-
-def get_valid_pos(peak_pos_list, valley_pos_list, state):
-    peak_pos, valley_pos = 0, 0 #默认为没有拐点
-    if state == 1:
-        if len(peak_pos_list) > 0:
-            peak_pos = min(peak_pos_list)
-        if len(valley_pos_list) > 0:
-            valley_pos = max(valley_pos_list)
-    elif state == 2:
-        if len(peak_pos_list) > 0:
-            peak_pos = max(peak_pos_list)
-        if len(valley_pos_list) > 0:
-            valley_pos = min(valley_pos_list)
-    return peak_pos, valley_pos
-
+def get_dqdv_incline(data):
+    data['dqdv_incline'] = 1
+    for i in range(1, len(data)):
+        data['dqdv_incline'].iloc[i] = data['dqdv'].iloc[i] / data['dqdv'].iloc[0]
+    return data
+    
 def find_ic_feature(df, C_RATE, cnt):
     """
     """
@@ -331,7 +223,8 @@ def find_ic_feature(df, C_RATE, cnt):
     del clip_data_list
     dqdv_list = outlier_err_dqdv(dqdv_list)#对异常点进行替换
     total_data['dqdv'] = dqdv_list
-    sel_cols = ['start_tick', 'data_num', 'dqdv', 'voltage_mean', 'voltage_std', 'voltage_diff_mean', 'voltage_diff_std', 'c']
+    total_data = get_dqdv_incline(total_data)
+    sel_cols = ['start_tick', 'data_num', 'dqdv', 'dqdv_incline', 'voltage_mean', 'voltage_std', 'voltage_diff_mean', 'voltage_diff_std', 'c']
     total_data = total_data[sel_cols]
     total_data = total_data.rename(columns={'data_num': 'clip_num'})
     total_data = rwd.transfer_data(cnt, total_data, keywords='start_tick')
@@ -412,7 +305,7 @@ def get_feature_soh(para_dict, mode, bat_name, pro_info, keywords='voltage'):
             train_feature.append(feature_df)
         del train_data_dict
     train_feature = pd.concat(tuple(train_feature))
-    rwd.save_train_xlsx(train_feature, 'cell_soh_'+bat_name, './data/')
+    rwd.save_bat_data(train_feature, 'cell_soh_'+bat_name, para_dict, mode)
     return train_feature
 
 
