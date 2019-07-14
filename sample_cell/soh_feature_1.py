@@ -10,111 +10,8 @@ Created on Sat Jul 13 22:58:48 2019
 
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-from scipy.optimize import leastsq
+import re
 import rw_bat_data as rwd
-
-def slip_by_turing_point(data, direction=0): #未使用
-    df_list = []
-    if direction == 0:
-        df = data[data['diff'] <= 0]#获得下降的点
-    else:
-        df = data[data['diff'] >= 0]#获得下降的点
-    if df.empty:
-        df_list.append(data)
-    else:
-        index_list = df.index.tolist()
-        if index_list[-1] < data.index[-1]:
-            index_list.append(data.index[-1])
-        start = 0
-        for index in index_list:
-            df_list.append(data.loc[start: index-1])
-            start = index
-    return df_list
-
-def analysis_(total_data, peak_2_pos, state):
-    df1 = total_data.loc[:peak_2_pos, ]
-    #df1.reverse()
-    length1 = len(df1)
-    df2 = total_data.loc[peak_2_pos:, ]
-    length2 = len(df2)
-    #del dqdv_list
-    #进行曲线分析
-    #fit_pars_1 = analysis_dqdv_curve(df1, i, pro_info, 6)
-    #fit_pars_2 = analysis_dqdv_curve(df2, i, pro_info, 3)
-    #fit_pars_3 = analysis_dqdv_curve(df1.loc[:length1//2, ], i, pro_info, 6)
-    #fit_pars_4 = analysis_dqdv_curve(df1.loc[length1//2:, ], i, pro_info, 6)
-    #fit_pars_5 = analysis_dqdv_curve(df2.loc[:length2//2, ], i, pro_info, 3)
-    #fit_pars_6 = analysis_dqdv_curve(df2.loc[length2//2:, ], i, pro_info, 3)
-    
-    #temp1.append(fit_pars_1)
-    #temp1.append(fit_pars_3)
-    #temp1.append(fit_pars_4)
-    #temp2.append(fit_pars_2)
-    #temp2.append(fit_pars_5)
-    #temp2.append(fit_pars_6)
-    #获得各曲线斜率
-    find_1st_peak(df1, state, p=6)
-    #find_1st_peak(df1.iloc[:length1//2, ].copy(), state, p=5)
-    find_1st_peak(df1.iloc[length1//2:, ], state, p=5)
-    find_3rd_peak(df2, state, p=3)
-    find_3rd_peak(df2.iloc[:length2//2, ].copy(), state, p=3)
-    #find_3rd_peak(df2.iloc[length2//2:, ], state, p=3)
-            
-def analysis_dqdv_curve(df, i, pro_info, p):
-    import matplotlib.pyplot as plt
-    #df = pd.DataFrame(dqdv_list, columns=['dqdv'])
-    plt.figure()
-    #plt.plot(df['dqdv'])
-    #plt.show()
-    print(pro_info['state'].iloc[i])
-    x_= df.index
-    y_= df['dqdv']
-    X = x_
-    Y = y_
-    #print(fitting(3, data.index, data['dqdv']))
-    fit_pars = fitting(p, X, Y)[0]
-    plt.plot(x_, y_, label='real line')
-    plt.scatter(X, Y, label='real points')
-    plt.plot(x_, np.poly1d(fit_pars)(x_), label='fitting line')
-    plt.legend()
-    plt.show()
-    print(fit_pars)
-    return fit_pars
-
-def analysis_dqdv_curve2(df, state, peak_pos_list, valley_pos_list):
-    if state == 1:
-        state = 'charge'
-    elif state == 2:
-        state = 'discharge'
-    #x = df.index
-    #x = df['x']
-    x = df['voltage_mean']
-    y1 = df['dqdv']
-    y2 = df['dqdv_slm']
-    import matplotlib.pyplot as plt
-    fig, ax = plt.subplots(figsize=(6, 6))
-    ax.grid(linestyle="--", linewidth=0.5, color='.25', zorder=-10)
-    ax.plot(x, y1, label='real line')
-    ax.scatter(x, y1, label='real points')
-    ax.plot(x, y2, label='fitting line')
-    ax.set_title(state)
-    ax.legend()
-    def circle(x, y, radius=0.15, color='black'):
-        from matplotlib.patches import Circle
-        circle = Circle((x, y), radius, clip_on=False, zorder=10, linewidth=1,
-                        edgecolor=color, facecolor=(0, 0, 0, .0125))
-        ax.add_artist(circle)
-        
-    for peak_pos in peak_pos_list:
-        #circle(peak_pos, df['dqdv'].loc[peak_pos])
-        plt.scatter(df['voltage_mean'].loc[peak_pos], df['dqdv'].loc[peak_pos], color='', marker='o', edgecolors='r', s=200)
-    for valley_pos in valley_pos_list:
-        #circle(valley_pos, df['dqdv'].loc[valley_pos], color='red')
-        plt.scatter(df['voltage_mean'].loc[valley_pos], df['dqdv'].loc[valley_pos], color='', marker='o', edgecolors='g', s=200)
-    plt.show()
-    print(peak_pos_list)
-    print(valley_pos_list)
 
     
 def get_1_pro_data(para_dict, mode, table_name, pro_info, pro_no, condition1='start_time', condition2='end_time', t_keywords='stime'):
@@ -125,7 +22,7 @@ def get_1_pro_data(para_dict, mode, table_name, pro_info, pro_no, condition1='st
     df = rwd.read_bat_data(para_dict, mode, table_name, start_time=str_value1, end_time=str_value2)
     return df
 
-def slip_data_by_volt(df, delta_v=0.01, series=1, keywords='voltage'):
+def slip_data_by_volt(df, delta_v=0.01, keywords='voltage'):
     """
     #按delta_v进行切片，series为电芯串联数
     """
@@ -146,23 +43,34 @@ def slip_data_by_volt(df, delta_v=0.01, series=1, keywords='voltage'):
                 pos_seq.append(start)
     return clip_data_list, pos_seq
 
+def normalize_feature(data, V_RATE, C_RATE, v_cols, c_cols):
+    for col in data.columns:
+        for j in v_cols:
+            if re.match(j, col):
+                data[col] = data[col] / V_RATE
+        for j in c_cols:
+            if re.match(j, col):
+                data[col] = data[col] / C_RATE
+    return data
+
 def calc_other_vectors(df, state):
     """
     """
     if state == 1: #充电
         df['c'] = df['charge_c']
-        df['e'] = df['charge_e']
+        #df['e'] = df['charge_e']
     elif state == 2: #放电
         df['c'] = df['discharge_c']
-        df['e'] = df['discharge_e']
+        #df['e'] = df['discharge_e']
     else:
         df['c'] = 0
-        df['e'] = 0
+        #df['e'] = 0
     return df
 
-def calc_dqdv(df, bias, C_RATE, parallel=1, sample=1):
+def calc_dqdv(df, bias, C_RATE, sample=1, parallel=1):
     """
     #计算dq/dv，由于没有dq，使用i代替，但需要考虑采样频率换算成1s
+    #parallel指的是系统中pack的并联数
     """
     dqdv = (df['current'].sum() / sample) / (df['voltage'].iloc[-1] - df['voltage'].iloc[0])
     dqdv = dqdv / C_RATE / parallel
@@ -229,21 +137,6 @@ def find_ic_feature(df, C_RATE, cnt):
     total_data = total_data.rename(columns={'data_num': 'clip_num'})
     total_data = rwd.transfer_data(cnt, total_data, keywords='start_tick')
     return total_data
-    
-def sel_columns(data, col, *kwg):
-    col_names = []
-    for i in data.columns:
-        for j in kwg:
-            if j in i:
-                col_names.append(i)
-                break
-    col_list = []
-    for i in col_names:
-        tmp = data[i]
-        data[i + str(col)] = tmp
-        col_list.append(i + str(col))
-    return data[col_list]
-
 
 def find_border(V_RATE, bat_type='NCM'):
     """
@@ -286,13 +179,13 @@ def get_feature_soh(para_dict, mode, bat_name, pro_info, keywords='voltage'):
     bat_type = para_dict['bat_config']['bat_type']
     border_dict = find_border(V_RATE, bat_type)
     train_feature = []
-    for i in range(0, 10):#range(len(pro_info)):
+    for i in range(0, 3):#range(len(pro_info)):
         print('starting calculating the features of battery for soh...')
         state = pro_info['state'].iloc[i]
         df = get_1_pro_data(para_dict, mode, bat_name, pro_info, i)
         df = df.reset_index(drop=True)
         df = calc_other_vectors(df, state)
-        cycle_soh = df['c'].iloc[-1] / C_RATE
+        cycle_soh = df['c'].iloc[-1]
         train_data = get_valid_data(df, state, border_dict['min'], border_dict['max'])#生产需要的训练数据
         train_data_dict = generate_train_data(train_data, state, border_dict['min'], border_dict['max'], 0.02)
         for key, train_data in train_data_dict.items():
@@ -301,32 +194,13 @@ def get_feature_soh(para_dict, mode, bat_name, pro_info, keywords='voltage'):
             feature_df['section'] = key
             feature_df['state'] = state
             feature_df['process_no'] = pro_info['process_no'].iloc[i]
-            feature_df['soh'] = cycle_soh
+            feature_df['c'] = cycle_soh
             train_feature.append(feature_df)
         del train_data_dict
     train_feature = pd.concat(tuple(train_feature))
+    train_feature = normalize_feature(train_feature, V_RATE, C_RATE, ['voltage'], ['c'])
     rwd.save_bat_data(train_feature, 'cell_soh_'+bat_name, para_dict, mode)
     return train_feature
-
-
-# 误差函数， 计算拟合曲线与真实数据点之间的差 ，作为leastsq函数的输入
-def residuals(p, x, y):
-    fun = np.poly1d(p)    # poly1d（）函数可以按照输入的列表p返回一个多项式函数
-    return y - fun(x)
-
-# 拟合函数
-def fitting(p, X, Y):
-    pars = np.random.rand(p+1)  # 生成p+1个随机数的列表，这样poly1d函数返回的多项式次数就是p
-    r = leastsq(residuals, pars, args=(X, Y))   # 三个参数：误差函数、函数参数列表、数据点
-    return r
-
-def smooth_curve(df, p):
-    X = df.index
-    Y = df['dqdv']
-    fit_pars = fitting(p, X, Y)[0]
-    df['dqdv_slm'] = np.poly1d(fit_pars)(X)
-    df['x'] = df.index
-    return df
 
 def test():
     data = [1,2,3,4,5,4,5,7,9,11,13,9.5,10,10.5,11,11,10.5,11,13,14,15]
