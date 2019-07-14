@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Mon Jul  8 11:43:44 2019
+Created on Sat Jul 13 22:58:48 2019
 
 @author: wuzhiqiang
-#1峰soc大概在40%，2峰大概在80%，1-2间谷大概60%
 """
+
+#!/usr/bin/env python3
+
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -113,19 +115,7 @@ def analysis_dqdv_curve2(df, state, peak_pos_list, valley_pos_list):
     plt.show()
     print(peak_pos_list)
     print(valley_pos_list)
-    
-def generate_train_data(total_data, state, method='voltage'):
-    """
-    #考虑后期应用数据的质量，从完整的一个过程数据中生成新的数据供训练用
-    #采用soc或电压
-    #充电：soc取40-85，    50-85,    40-95,      50-90,     75-90;
-    #     volt 3.51-3.7  3.59-3.7  3.51-4.05   3.59-4.05  3.64-4.05
-    #放电：soc取40-85，    50-85,    40-95,      50-90,     75-90;
-    #     volt 3.1-3.55  3.2-3.55  3.1-4.05   3.59-4.05  3.64-4.05
-    #key 代表数据筛选条件
-    """
-    train_data_dict = {'0-100': total_data}
-    return train_data_dict
+
     
 def get_1_pro_data(para_dict, mode, table_name, pro_info, pro_no, condition1='start_time', condition2='end_time', t_keywords='stime'):
     str_value1 = pro_info[condition1].iloc[pro_no] 
@@ -273,89 +263,16 @@ def sel_curve_para(df, state, scale, direction='left'):
     peak_value = rate / scale * peak_incline
     valley_value = rate / scale * valley_incline
     return peak_incline, valley_incline, peak_value, valley_value
-    
-def find_break_point(data, num, peak_incline, valley_incline, peak_value, valley_value, direction='left'):
-    """
-    #direction：0 上升， 1 下降
-    #当斜率变化超过设定时，认为拐点 |diff(x)/diff(x-1)|<=up_incline 或>= (down_incline)
-    #拐点（峰）dff2<=0,且diff(x-1)>=设定,且diff(x+1)/diff(x)<=up_incline [不采用f(x)>=f(x-1)&&f(x)>f(x+1)或者f(x)>f(x-1)&&f(x)>=f(x+1)]
-    #拐点(谷) diff2>=0,且diff(x-1)<=设定,且diff(x+1)/diff(x)>=down_incline [不采用f(x)<=f(x-1)&&f(x)<f(x+1)或者f(x)<f(x-1)&&f(x)<=f(x+1)]
-    """
-    length = len(data)
-    if length < num:
-        return [], []
-    #rate = data['dqdv_slm'].max() / length #y轴刻度转换比例
-    #将标准斜率转化为实际的diff
-    #incline *= rate
-    #up_incline *= rate
-    #down_incline *= rate
-    #data['dqdv_slm_nml'] = data['dqdv_slm'] / rate #x\y轴尺度一致
-    data['dqdv_slm_diff'] = data['dqdv_slm'].diff()
-    data['dqdv_slm_diff2'] = data['dqdv_slm_diff'].diff()
-    data['dqdv_slm_diffrate'] = 1
-    for i in range(2, len(data)):
-        data['dqdv_slm_diffrate'].iloc[i] = data['dqdv_slm_diff'].iloc[i] / data['dqdv_slm_diff'].iloc[i - 1]
-    data = data.fillna(0)
-    #df = data[data['dqdv_slm_diff2'].abs() >= incline].copy() #小于设定
-    peak_pos_list_tmp = data[data['dqdv_slm_diffrate'] <= peak_incline].index.tolist()
-    valley_pos_list_tmp = data[data['dqdv_slm_diff2'] >= 0].index.tolist()
-    #valley_pos_list_tmp = data[data['dqdv_slm_diffrate'] >= valley_incline].index.tolist()
-    #df = df[['dqdv_slm_diff2']]
-    if (len(peak_pos_list_tmp) + len(valley_pos_list_tmp)) < 1:
-        return [], []
-    peak_pos_list = []
-    valley_pos_list = []
-    #peak_pos_list_tmp = df[df['dqdv_slm_diff2'] < 0].index.tolist()
-    #valley_pos_list_tmp = df[df['dqdv_slm_diff2'] > 0].index.tolist()
-    #进行前一个位置斜率判断
-    for peak_pos in peak_pos_list_tmp:
-        if peak_pos in data.index[:num] or peak_pos in data.index[-num:]:
-            continue
-        if data['dqdv_slm_diff'].loc[peak_pos - 1] >= peak_value and\
-            data['dqdv_slm_diffrate'].loc[peak_pos + 1] <= peak_incline and\
-            data['dqdv_slm_diff2'].loc[peak_pos + 1] <= 0:
-            peak_pos_list.append(peak_pos)
-    #for valley_pos in valley_pos_list_tmp[:-1]:
-    for valley_pos in valley_pos_list_tmp:
-        #if data['dqdv_slm_diff'].loc[valley_pos - 1] <= valley_value: and\
-            #data['dqdv_slm_diffrate'].loc[valley_pos + 1] >= valley_incline or\
-            #data['dqdv_slm_diffrate'].loc[valley_pos + 1] < 0
-            #data['dqdv_slm_diff2'].loc[valley_pos + 1] >= 0:
-        if valley_pos in data.index[:num] or valley_pos in data.index[-num:]:
-            continue
-        if (direction == 'left' and data['dqdv_slm_diff'].loc[valley_pos - 1] <= valley_value) or\
-            (direction == 'right' and data['dqdv_slm_diffrate'].loc[valley_pos + 1] <= valley_incline and\
-             abs(data['dqdv_slm_diff'].loc[valley_pos - 1]) <= valley_value):
-            valley_pos_list.append(valley_pos)
-    peak_pos_list_tmp = peak_pos_list
-    valley_pos_list_tmp = valley_pos_list
-    peak_pos_list = []
-    valley_pos_list = []
-    if len(peak_pos_list_tmp) > 0:#大于空
-        peak_pos_list.append(peak_pos_list_tmp[0])
-        for i in range(1, len(peak_pos_list_tmp)):
-            if (peak_pos_list_tmp[i] - peak_pos_list_tmp[i - 1]) > num:
-                peak_pos_list.append(peak_pos_list_tmp[i])#上升取连续位置的开头位置
-    if len(valley_pos_list_tmp) > 0:#大于空
-        valley_pos_list.append(valley_pos_list_tmp[0])
-        for i in range(1, len(valley_pos_list_tmp)):
-            if (valley_pos_list_tmp[i] - valley_pos_list_tmp[i - 1]) > num:
-                valley_pos_list.append(valley_pos_list_tmp[i])    
-    return peak_pos_list, valley_pos_list
 
-
-def find_1st_peak(df, state, p=6, rate=400, incline=0.3, duration=3):
+def find_1st_peak(df, state, p=6):
     """
-    #找1峰，由于1峰在2峰左侧，找到2峰后，从2峰左侧位置开始判断
-    #1峰判断规则为斜率发生较大变化incline，且斜率需要维持至少duration，并且右斜率小于左斜率，且总体均为正
+    #
     """
     df = smooth_curve(df, p)
     df, scale = scale_curve(df, is_scale=False)
-    peak_incline, valley_incline, peak_value, valley_value = sel_curve_para(df, state, scale)
-    peak_pos_list, valley_pos_list = find_break_point(df, duration, peak_incline, valley_incline, peak_value, valley_value)
-    analysis_dqdv_curve2(df, state, peak_pos_list, valley_pos_list)
-    peak_pos, valley_pos = get_valid_pos(peak_pos_list, valley_pos_list, state)
-    return peak_pos, valley_pos
+    border = find_border(df)
+    analysis_dqdv_curve2(df, state, border)
+    return border
 
 def find_3rd_peak(df, state, p=6, rate=400, incline=0.3, duration=3):
     """
@@ -398,15 +315,12 @@ def get_valid_pos(peak_pos_list, valley_pos_list, state):
             valley_pos = min(valley_pos_list)
     return peak_pos, valley_pos
 
-def find_ic_feature(df, state, C_RATE):
+def find_ic_feature(df, C_RATE, cnt):
     """
-    #先找第2峰，如果存在，则继续找1峰和3峰
-    #特征包括：1、2、3峰值和位置（对应电压），2峰两边斜率，2峰面积
     """
     clip_data_list, pos_seq = slip_data_by_volt(df)
     total_data = pd.DataFrame()
     dqdv_list = []
-    feature_cols =  ['voltage_', 'dqdv', 'peak_incline', 'valley_incline']
     j = 0
     for clip_data in clip_data_list:
         dqdv = calc_dqdv(clip_data, 0, C_RATE)
@@ -417,73 +331,13 @@ def find_ic_feature(df, state, C_RATE):
     del clip_data_list
     dqdv_list = outlier_err_dqdv(dqdv_list)#对异常点进行替换
     total_data['dqdv'] = dqdv_list
-    peak_2, peak_2_pos = find_2nd_peak(dqdv_list)#获得2峰，并将数据分为2部分,保留原index
-    if peak_2_pos is not None:
-        #analysis_(total_data, peak_2_pos, state)#分析
-        feature_df = pd.DataFrame()  #创建保存特征的数据块
-        feature_2 = total_data.loc[[peak_2_pos]].copy()
-        y2 = peak_2
-        x2 = feature_2['voltage_mean'].loc[peak_2_pos]
-        
-        feature_2 = change_columns(feature_2, '_2', *feature_cols)
-        feature_df = feature_df.append(feature_2) #将2peak点的特征放入
-        feature_df = feature_df.reset_index(drop=True)
-        
-        peak_1_pos_p, peak_1_pos_v = find_1st_peak(total_data[:peak_2_pos], state, p=6)
-        feature_1_peak = total_data.loc[[peak_1_pos_p]].copy()
-        y1 = feature_1_peak['dqdv'].loc[peak_1_pos_p]
-        x1 = feature_1_peak['voltage_mean'].loc[peak_1_pos_p]
-        feature_1_peak['peak_incline'] = (y2 - y1) / (x2 - x1)
-        feature_1_peak = feature_1_peak.reset_index(drop=True)
-        if peak_1_pos_p == 0:#无拐点
-            feature_1_peak.loc[:] = -99999999 #
-        feature_1_peak = change_columns(feature_1_peak, '_p', *feature_cols)
-        
-        feature_1_valley = total_data.loc[[peak_1_pos_v]].copy()
-        y1 = feature_1_valley['dqdv'].loc[peak_1_pos_v]
-        x1 = feature_1_valley['voltage_mean'].loc[peak_1_pos_v]
-        feature_1_valley['valley_incline'] = (y2 - y1) / (x2 - x1)
-        feature_1_valley = feature_1_valley.reset_index(drop=True)
-        if peak_1_pos_v == 0:
-            feature_1_valley.loc[:] = -99999999
-        feature_1_valley = change_columns(feature_1_valley, '_v', *feature_cols)
-        
-        feature_1_peak = feature_1_peak.merge(feature_1_valley, left_index=True, right_index=True)
-        feature_1_peak = change_columns(feature_1_peak, '_1', *feature_cols)
-        feature_df = feature_df.merge(feature_1_peak, left_index=True, right_index=True)
-        del feature_1_peak
-        del feature_1_valley
-        
-        peak_3_pos_p, peak_3_pos_v = find_3rd_peak(total_data[peak_2_pos:], state, p=3)
-        feature_3_peak = total_data.loc[[peak_3_pos_p]].copy()
-        y1 = feature_3_peak['dqdv'].loc[peak_3_pos_p]
-        x1 = feature_3_peak['voltage_mean'].loc[peak_3_pos_p]
-        feature_3_peak['peak_incline'] = (y2 - y1) / (x2 - x1)
-        feature_3_peak = feature_3_peak.reset_index(drop=True)
-        if peak_3_pos_p == 0:#无拐点
-            feature_3_peak.loc[:] = -99999999 #
-        feature_3_peak = change_columns(feature_3_peak, '_p', *feature_cols)
-        
-        feature_3_valley = total_data.loc[[peak_3_pos_v]].copy()
-        y1 = feature_3_valley['dqdv'].loc[peak_3_pos_v]
-        x1 = feature_3_valley['voltage_mean'].loc[peak_3_pos_v]
-        feature_3_valley['valley_incline'] = (y2 - y1) / (x2 - x1)
-        feature_3_valley = feature_3_valley.reset_index(drop=True)
-        if peak_3_pos_v == 0:
-            feature_3_valley.loc[:] = -99999999
-        feature_3_valley = change_columns(feature_3_valley, '_v', *feature_cols)
-        
-        feature_3_peak = feature_3_peak.merge(feature_3_valley, left_index=True, right_index=True)
-        feature_3_peak = change_columns(feature_3_peak, '_3', *feature_cols)
-        feature_df = feature_df.merge(feature_3_peak, left_index=True, right_index=True)
-        del feature_3_peak
-        del feature_3_valley
-        return feature_df
-    else:
-        print('the data can not be used.')
-        return None
+    sel_cols = ['start_tick', 'data_num', 'dqdv', 'voltage_mean', 'voltage_std', 'voltage_diff_mean', 'voltage_diff_std', 'c']
+    total_data = total_data[sel_cols]
+    total_data = total_data.rename(columns={'data_num': 'clip_num'})
+    total_data = rwd.transfer_data(cnt, total_data, keywords='start_tick')
+    return total_data
     
-def change_columns(data, col, *kwg):
+def sel_columns(data, col, *kwg):
     col_names = []
     for i in data.columns:
         for j in kwg:
@@ -497,29 +351,65 @@ def change_columns(data, col, *kwg):
         col_list.append(i + str(col))
     return data[col_list]
 
+
+def find_border(V_RATE, bat_type='NCM'):
+    """
+    cell_para = [[3.495, 3.620, 3.67, 3.702, 3.738, 3.78, 3.843, 3.928, 4.029, 4.143, 4.2],
+                 [2.7, 3.354, 3.455, 3.506, 3.544, 3.583, 3.634, 3.706, 3.799, 3.904, 4.049]]
+    soc_section = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
+    border_df = pd.DataFrame(cell_para, columns=soc_section, index=[1, 2])
+    border_df = border_df.T
+    return border_df
+    """
+    border_dict = {}
+    if bat_type == 'NCM':
+        border_dict['min'] = [0, V_RATE * 1.03, V_RATE * 1.02] #[x, charge, discharge]
+        border_dict['max'] = [0, V_RATE * 1.1, V_RATE * 1.09]
+    return border_dict
+
+def get_valid_data(df, state, border_min, border_max):
+    """
+    """
+    train_data = df[df['voltage'] >= border_min[state]]
+    train_data = train_data[train_data['voltage'] <= border_max[state]]
+    return train_data
+
+def generate_train_data(train_data, state, border_min, border_max, bias=0.02):
+    """
+    """
+    train_data_dict = {'%.3f-%.3f'%(border_min[state], border_max[state]): train_data}
+    tmp_min = [i * (1 + bias) for i in border_min]
+    train_data_dict['%.3f-%.3f'%(tmp_min[state], border_max[state])] = get_valid_data(train_data, state, tmp_min, border_max)
+    tmp_max = [i * (1 - bias) for i in border_max]
+    train_data_dict['%.3f-%.3f'%(border_min[state], tmp_max[state])] = get_valid_data(train_data, state, border_min, tmp_max)
+    return train_data_dict
+
 def get_feature_soh(para_dict, mode, bat_name, pro_info, keywords='voltage'):
     pro_info = pro_info[pro_info['state'] != 0]
     if len(pro_info) < 1:
         return None
     C_RATE = para_dict['bat_config']['C_RATE']
-    #V_RATE = para_dict['bat_config']['V_RATE']
-    #bat_type = para_dict['bat_config']['bat_type']
+    V_RATE = para_dict['bat_config']['V_RATE']
+    bat_type = para_dict['bat_config']['bat_type']
+    border_dict = find_border(V_RATE, bat_type)
     train_feature = []
-    for i in range(0, 100):#range(len(pro_info)):
+    for i in range(0, 10):#range(len(pro_info)):
         print('starting calculating the features of battery for soh...')
         state = pro_info['state'].iloc[i]
         df = get_1_pro_data(para_dict, mode, bat_name, pro_info, i)
         df = df.reset_index(drop=True)
         df = calc_other_vectors(df, state)
         cycle_soh = df['c'].iloc[-1] / C_RATE
-        train_data_dict = generate_train_data(df, state)#生产新的训练数据
+        train_data = get_valid_data(df, state, border_dict['min'], border_dict['max'])#生产需要的训练数据
+        train_data_dict = generate_train_data(train_data, state, border_dict['min'], border_dict['max'], 0.02)
         for key, train_data in train_data_dict.items():
-            feature_df = find_ic_feature(train_data, state, C_RATE)
-            feature_df['state'] = state
+            #feature_df = find_ic_feature(train_data, state, C_RATE)
+            feature_df = find_ic_feature(train_data, C_RATE, i)
             feature_df['section'] = key
+            feature_df['state'] = state
             feature_df['process_no'] = pro_info['process_no'].iloc[i]
             feature_df['soh'] = cycle_soh
-        train_feature.append(feature_df)
+            train_feature.append(feature_df)
         del train_data_dict
     train_feature = pd.concat(tuple(train_feature))
     rwd.save_train_xlsx(train_feature, 'cell_soh_'+bat_name, './data/')
@@ -547,24 +437,8 @@ def smooth_curve(df, p):
 
 def test():
     data = [1,2,3,4,5,4,5,7,9,11,13,9.5,10,10.5,11,11,10.5,11,13,14,15]
-    #data.reverse()
     data = pd.DataFrame(data, columns=['dqdv'])
-    #df_list = find_1st_peak(data)
-    x_= data.index
-    y_= data['dqdv']
-    X = x_
-    Y = y_
-    #print(fitting(3, data.index, data['dqdv']))
-    fit_pars = fitting(4, X, Y)[0]
-    plt.plot(x_, y_, label='real line')
-    plt.scatter(X, Y, label='real points')
-    plt.plot(x_, np.poly1d(fit_pars)(x_), label='fitting line')
-    plt.legend()
-    plt.show()
-    print(np.poly1d(fit_pars)(x_))
-    data['dqdv_slm'] = np.poly1d(fit_pars)(x_)
-    peak_pos_list, valley_pos_list = find_break_point(data, 3, 0.25)
-    print(peak_pos_list)
-    print(valley_pos_list)
+    border_df = find_border()
+    generate_train_data(data, 1, border_df, 40, 70)
 if __name__ == '__main__':
     test()

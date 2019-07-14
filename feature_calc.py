@@ -19,7 +19,7 @@ import rw_bat_data as rwd
 import func as fc
 import cell_v_drop as cvd
 import cell_stdv as cs
-import soh_feature as sf
+import soh_feature_1 as sf
 
 def init_data_para():
     para_dict = {}
@@ -86,7 +86,7 @@ def main(argv):
             if 'soh_feature' in para_dict['mission'] or 'all' in para_dict['mission']:
                 pro_info = rwd.read_bat_data(para_dict, mode, para_dict['log_info']+'_'+bat_name)
                 feature = sf.get_feature_soh(para_dict, mode, bat_name, pro_info)
-                rwd.save_pro_info(feature, 'cell_soh_'+bat_name, para_dict, mode)
+                #rwd.save_pro_info(feature, 'cell_soh_'+bat_name, para_dict, mode)
     else:
          print('there is no bat!')
          
