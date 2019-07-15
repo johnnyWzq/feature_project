@@ -131,6 +131,8 @@ def find_ic_feature(df, C_RATE, cnt):
             total_data = total_data.append(rwd.transfer_data(j, clip_data, keywords='stime')) #获得每一个电压数据片对电压的统计值
             j += 1 #只有当dqdv有效，j才增加
     del clip_data_list
+    if len(dqdv_list) == 0:
+        return None
     dqdv_list = outlier_err_dqdv(dqdv_list)#对异常点进行替换
     total_data['dqdv'] = dqdv_list
     total_data = get_dqdv_incline(total_data)
@@ -199,7 +201,7 @@ def get_feature_soh(para_dict, mode, bat_name, pro_info, keywords='voltage'):
             feature_df['section'] = key
             feature_df['state'] = state
             feature_df['process_no'] = pro_info['process_no'].iloc[i]
-            feature_df['c'] = cycle_soh
+            feature_df['soh'] = cycle_soh
             train_feature.append(feature_df)
         del train_data_dict
     train_feature = pd.concat(tuple(train_feature))
