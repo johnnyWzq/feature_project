@@ -28,7 +28,7 @@ def slip_data_by_volt(df, delta_v=0.01, keywords='voltage'):
     """
     if df is None or len(df) <= 1:
         print('there is not enough data.')
-        return None
+        return None, None
     start = 0
     clip_data_list = []
     pos_seq = [start]
@@ -119,6 +119,8 @@ def find_ic_feature(df, C_RATE, cnt):
     """
     """
     clip_data_list, pos_seq = slip_data_by_volt(df)
+    if clip_data_list is None or pos_seq is None:
+        return None
     total_data = pd.DataFrame()
     dqdv_list = []
     j = 0
@@ -191,6 +193,8 @@ def get_feature_soh(para_dict, mode, bat_name, pro_info, keywords='voltage'):
         for key, train_data in train_data_dict.items():
             #feature_df = find_ic_feature(train_data, state, C_RATE)
             feature_df = find_ic_feature(train_data, C_RATE, i)
+            if feature_df is None:
+                continue
             feature_df['section'] = key
             feature_df['state'] = state
             feature_df['process_no'] = pro_info['process_no'].iloc[i]
