@@ -180,9 +180,10 @@ def get_feature_soh(para_dict, mode, bat_name, pro_info, keywords='voltage'):
     V_RATE = para_dict['bat_config']['V_RATE']
     bat_type = para_dict['bat_config']['bat_type']
     border_dict = find_border(V_RATE, bat_type)
+    print('round %d :starting calculating the features of battery for soh...')
     train_feature = []
     for i in range(len(pro_info)):
-        print('starting calculating the features of battery for soh...')
+        print('-----------------round %d-------------------'%i)
         state = pro_info['state'].iloc[i]
         df = get_1_pro_data(para_dict, mode, bat_name, pro_info, i)
         df = df.reset_index(drop=True)
