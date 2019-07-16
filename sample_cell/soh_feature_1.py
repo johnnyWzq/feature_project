@@ -72,7 +72,7 @@ def calc_dqdv(df, bias, C_RATE, sample=1, parallel=1):
     #计算dq/dv，由于没有dq，使用i代替，但需要考虑采样频率换算成1s
     #parallel指的是系统中pack的并联数
     """
-    dqdv = (df['current'].sum() / sample) / (df['voltage'].iloc[-1] - df['voltage'].iloc[0])
+    dqdv = (df['current'].sum() * sample) / (df['voltage'].iloc[-1] - df['voltage'].iloc[0])
     dqdv = dqdv / C_RATE / parallel
     if dqdv == np.inf or dqdv == -np.inf: #电压变化较快，一条数据就超过设定值
         dqdv = 88888888
@@ -83,6 +83,8 @@ def outlier_err_dqdv(dqdv_list, method=2):
     #1种是比较平均值找异常
     #2种是比较相邻，相差太大异常
     """
+    if len(dqdv_list) == 0:
+        return None
     if method == 1:
         outlier = 3
         dqdv_mean = 0
@@ -131,9 +133,9 @@ def find_ic_feature(df, C_RATE, cnt):
             total_data = total_data.append(rwd.transfer_data(j, clip_data, keywords='stime')) #获得每一个电压数据片对电压的统计值
             j += 1 #只有当dqdv有效，j才增加
     del clip_data_list
-    if len(dqdv_list) == 0:
-        return None
     dqdv_list = outlier_err_dqdv(dqdv_list)#对异常点进行替换
+    if dqdv_list is None:
+        return None
     total_data['dqdv'] = dqdv_list
     total_data = get_dqdv_incline(total_data)
     sel_cols = ['start_tick', 'data_num', 'dqdv', 'dqdv_incline', 'voltage_mean', 'voltage_std', 'voltage_diff_mean', 'voltage_diff_std', 'c']
