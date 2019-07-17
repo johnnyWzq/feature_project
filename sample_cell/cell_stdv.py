@@ -147,20 +147,27 @@ def get_same_current_process(data, c_keywords='current_reg', p_keywords='process
         df = data_gp.get_group(cur)
         df_gp = df.groupby(p_keywords)
         #获得相同电流的各过程数据，但是还需要找到同等时长
-        duration = []
+        duration = {'duration': [], 'process_no':[]}
         if len(df_gp.groups.keys()) > 1: #有1个以上的过程有相同电流
             for process_no in df_gp.groups.keys():#按过程分组
                 df0 = df_gp.get_group(process_no) #获得具有相同电流的不同过程数据
-                duration.append(len(df0))
-            min_duration = min(duration) #取时间最短的作为交集
-            for process_no in df_gp.groups.keys():#重新分组，取相同时间的数据,假设电压的变化是线性的，取数从位置0开始
+                duration['duration'].append(len(df0))
+                duration['process_no'].append(process_no)
+            duration = pd.DataFrame.from_dict(duration)
+            if len(duration) > 2:
+                sel_duration = duration['duration'].median()
+                duration = duration[duration['duration'] >= sel_duration]
+            sel_duration = duration['duration'].min() #默认取时间最短的作为交集
+            
+            for process_no in duration['process_no']:#重新分组，取相同时间的数据,假设电压的变化是线性的，取数从位置0开始
                 df0 = df_gp.get_group(process_no) #获得具有相同电流的不同过程数据
-                df0 = df0[:min_duration]
+                df0 = df0[:sel_duration]
                 
                 df1 = pd.DataFrame(columns=data.columns)
                 for column in df1.columns:
                     df1.loc[tick, column] = float(df0[column].iloc[0])
                 df1.loc[tick, 'delta_voltage'] = df0[v_keywords].iloc[-1] - df0[v_keywords].iloc[0]
+                df1.loc[tick, 'duration'] = sel_duration
                 df1 = gf.cal_stat_row(tick, df0[v_keywords], v_keywords, df1)
                 df1 = gf.cal_stat_row(tick, df0[v_keywords].diff(), v_keywords + '_diff', df1)
                 df1 = gf.cal_stat_row(tick, df0[v_keywords].diff().diff(), v_keywords + '_diff2', df1)

@@ -19,7 +19,8 @@ import rw_bat_data as rwd
 import func as fc
 import cell_v_drop as cvd
 import cell_stdv as cs
-import soh_feature_1 as sf
+#import soh_feature_1 as sf
+import soh_feature as sf
 
 def init_data_para():
     para_dict = {}
@@ -50,8 +51,8 @@ def init_data_para():
                              'run': {'s': 'localhost', 'u': 'data', 'p': 'For2019&tomorrow', 'db': 'bat_config', 'port': 3306}
                              }
     
-    para_dict['mission'] = ['cell_v_drop', 'cell_stdv']
-    para_dict['mission'] = ['soh_feature']#['all', 'pro_info', 'cell_v_drop']
+    para_dict['mission'] = ['cell_v_drop', 'cell_stdv', 'soh_feature']
+    para_dict['mission'] = ['cell_stdv']#['all', 'pro_info', 'cell_v_drop']
     return para_dict
 
 def main(argv):
