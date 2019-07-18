@@ -141,6 +141,7 @@ def find_ic_feature(df, C_RATE, cnt):
     sel_cols = ['start_tick', 'data_num', 'dqdv', 'dqdv_incline', 'voltage_mean', 'voltage_std', 'voltage_diff_mean', 'voltage_diff_std', 'c']
     total_data = total_data[sel_cols]
     total_data = total_data.rename(columns={'data_num': 'clip_num'})
+    #total_data['start_tick'] = total_data['start_tick'].apply(str)
     total_data = rwd.transfer_data(cnt, total_data, keywords='start_tick')
     return total_data
 
@@ -186,7 +187,7 @@ def get_feature_soh(para_dict, mode, bat_name, pro_info, keywords='voltage'):
     border_dict = find_border(V_RATE, bat_type)
     print('round %d :starting calculating the features of battery for soh...')
     train_feature = []
-    for i in range(len(pro_info)):
+    for i in range(2006, len(pro_info)):
         print('-----------------round %d-------------------'%i)
         state = pro_info['state'].iloc[i]
         df = get_1_pro_data(para_dict, mode, bat_name, pro_info, i)
@@ -208,6 +209,7 @@ def get_feature_soh(para_dict, mode, bat_name, pro_info, keywords='voltage'):
         del train_data_dict
     train_feature = pd.concat(tuple(train_feature))
     train_feature = normalize_feature(train_feature, V_RATE, C_RATE, ['voltage'], ['c'])
+    train_feature = train_feature.reset_index(drop=True)
     rwd.save_bat_data(train_feature, 'cell_soh_'+bat_name, para_dict, mode)
     return train_feature
 
