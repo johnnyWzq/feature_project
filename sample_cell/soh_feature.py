@@ -11,6 +11,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.optimize import leastsq
 import rw_bat_data as rwd
+import soh_feature_1 as sf1
 
 def slip_by_turing_point(data, direction=0): #未使用
     df_list = []
@@ -398,18 +399,19 @@ def get_valid_pos(peak_pos_list, valley_pos_list, state):
             valley_pos = min(valley_pos_list)
     return peak_pos, valley_pos
 
-def find_ic_feature(df, state, C_RATE):
+def find_ic_feature(df, state, C_RATE, sample_time, parallel, series):
     """
     #先找第2峰，如果存在，则继续找1峰和3峰
     #特征包括：1、2、3峰值和位置（对应电压），2峰两边斜率，2峰面积
     """
-    clip_data_list, pos_seq = slip_data_by_volt(df)
+    delta_v = 0.01 * series
+    clip_data_list, pos_seq = sf1.slip_data_by_volt(df, delta_v)
     total_data = pd.DataFrame()
     dqdv_list = []
     feature_cols =  ['voltage_', 'dqdv', 'peak_incline', 'valley_incline']
     j = 0
     for clip_data in clip_data_list:
-        dqdv = calc_dqdv(clip_data, 0, C_RATE)
+        dqdv = sf1.calc_dqdv(clip_data, 0, C_RATE, sample=sample_time, parallel=parallel)
         if dqdv != 88888888:
             dqdv_list.append(dqdv)
             total_data = total_data.append(rwd.transfer_data(j, clip_data, keywords='stime')) #获得每一个电压数据片对电压的统计值
@@ -501,9 +503,12 @@ def get_feature_soh(para_dict, mode, bat_name, pro_info, keywords='voltage'):
     pro_info = pro_info[pro_info['state'] != 0]
     if len(pro_info) < 1:
         return None
+    sample_time = pro_info['sample_time'].iloc[0]
     C_RATE = para_dict['bat_config']['C_RATE']
     #V_RATE = para_dict['bat_config']['V_RATE']
     #bat_type = para_dict['bat_config']['bat_type']
+    parallel = para_dict['bat_config']['parallel']
+    series = para_dict['bat_config']['series']
     train_feature = []
     for i in range(0, 100):#range(len(pro_info)):
         print('starting calculating the features of battery for soh...')
@@ -514,7 +519,7 @@ def get_feature_soh(para_dict, mode, bat_name, pro_info, keywords='voltage'):
         cycle_soh = df['c'].iloc[-1] / C_RATE
         train_data_dict = generate_train_data(df, state)#生产新的训练数据
         for key, train_data in train_data_dict.items():
-            feature_df = find_ic_feature(train_data, state, C_RATE)
+            feature_df = find_ic_feature(train_data, state, C_RATE, sample_time, parallel, series)
             feature_df['state'] = state
             feature_df['section'] = key
             feature_df['process_no'] = pro_info['process_no'].iloc[i]

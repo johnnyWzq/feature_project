@@ -22,25 +22,52 @@ def get_1_pro_data(para_dict, mode, table_name, pro_info, pro_no, condition1='st
     df = rwd.read_bat_data(para_dict, mode, table_name, start_time=str_value1, end_time=str_value2)
     return df
 
-def slip_data_by_volt(df, delta_v=0.01, keywords='voltage'):
+def slip_data_by_volt(df, delta_v=0.01, keywords='voltage', method=0, start_value= 2.7, direction=1):
     """
     #按delta_v进行切片，series为电芯串联数
+    #direction=1为数值增加
     """
     if df is None or len(df) <= 1:
         print('there is not enough data.')
         return None, None
-    start = 0
-    clip_data_list = []
-    pos_seq = [start]
-    for i in range(1, len(df)):
-        if abs((df.iloc[i][keywords] - df.iloc[start][keywords])) >= delta_v or \
-            i == (len(df) - 1):
-            if i == (len(df) - 1):
-                clip_data_list.append(df.iloc[start:])
-            else:
-                clip_data_list.append(df.iloc[start: i])
-                start = i
-                pos_seq.append(start)
+    if method == 0:
+        start = 0
+        clip_data_list = []
+        pos_seq = [start]
+        for i in range(1, len(df)):
+            if abs((df.iloc[i][keywords] - df.iloc[start][keywords])) >= delta_v or \
+                i == (len(df) - 1):
+                if i == (len(df) - 1):
+                    clip_data_list.append(df.iloc[start:])
+                else:
+                    clip_data_list.append(df.iloc[start: i])
+                    start = i
+                    pos_seq.append(start)
+    elif method == 1:
+        if direction == 1:
+            border_list = [(start_value + delta_v * i) for i in range(200)]
+            for i, tmp in enumerate(border_list):
+                if df.iloc[0][keywords] >= tmp and df.iloc[0][keywords] <= border_list[i + 1]:
+                    border = tmp
+                    break
+        elif direction == 2:
+            border_list = [(start_value - delta_v * i) for i in range(200)]
+            for i, tmp in enumerate(border_list):
+                if df.iloc[0][keywords] <= tmp and df.iloc[0][keywords] >= border_list[i + 1]:
+                    border = tmp
+                    break
+        start = 0
+        clip_data_list = []
+        pos_seq = [start]
+        for i in range(1, len(df)):
+            if abs((df.iloc[i][keywords] - border)) >= delta_v or i == (len(df) - 1):
+                if i == (len(df) - 1):
+                    clip_data_list.append(df.iloc[start:])
+                else:
+                    clip_data_list.append(df.iloc[start: i])
+                    border = df.iloc[i][keywords]
+                    start = i
+                    pos_seq.append(start)
     return clip_data_list, pos_seq
 
 def normalize_feature(data, V_RATE, C_RATE, v_cols, c_cols):
@@ -119,11 +146,11 @@ def get_dqdv_incline(data):
         data['dqdv_incline'].iloc[i] = data['dqdv'].iloc[i] / data['dqdv'].iloc[0]
     return data
     
-def find_ic_feature(df, C_RATE, cnt, sample_time, parallel, series):
+def find_ic_feature(df, C_RATE, cnt, sample_time, parallel, series, start_value, direction):
     """
     """
     delta_v = 0.01 * series
-    clip_data_list, pos_seq = slip_data_by_volt(df, delta_v)
+    clip_data_list, pos_seq = slip_data_by_volt(df, delta_v, method=1, start_value= start_value, direction=direction)
     if clip_data_list is None or pos_seq is None:
         return None
     total_data = pd.DataFrame()
@@ -163,6 +190,13 @@ def find_border(V_RATE, bat_type='NCM'):
         border_dict['max'] = [0, V_RATE * 1.1, V_RATE * 1.09]
     return border_dict
 
+def get_start_value(border_dict, state):
+    if state == 1:
+        start_value = border_dict['min'][state]
+    elif state == 2:
+        start_value = border_dict['max'][state]
+    return start_value
+
 def get_valid_data(df, state, border_min, border_max):
     """
     """
@@ -185,14 +219,13 @@ def get_feature_soh(para_dict, mode, bat_name, pro_info, keywords='voltage'):
     if len(pro_info) < 1:
         return None
     sample_time = pro_info['sample_time'].iloc[0]
-    
     C_RATE = para_dict['bat_config']['C_RATE']
     V_RATE = para_dict['bat_config']['V_RATE']
     bat_type = para_dict['bat_config']['bat_type']
     parallel = para_dict['bat_config']['parallel']
     series = para_dict['bat_config']['series']
     border_dict = find_border(V_RATE, bat_type)
-    print('round %d :starting calculating the features of battery for soh...')
+    print('starting calculating the features of battery for soh...')
     train_feature = []
     for i in range(0, len(pro_info)):
         print('-----------------round %d-------------------'%i)
@@ -202,10 +235,10 @@ def get_feature_soh(para_dict, mode, bat_name, pro_info, keywords='voltage'):
         df = calc_other_vectors(df, state)
         cycle_soh = df['c'].iloc[-1]
         train_data = get_valid_data(df, state, border_dict['min'], border_dict['max'])#生产需要的训练数据
+        start_value = get_start_value(border_dict, state)
         train_data_dict = generate_train_data(train_data, state, border_dict['min'], border_dict['max'], 0.02)
         for key, train_data in train_data_dict.items():
-            #feature_df = find_ic_feature(train_data, state, C_RATE)
-            feature_df = find_ic_feature(train_data, C_RATE, i, sample_time, parallel, series)
+            feature_df = find_ic_feature(train_data, C_RATE, i, sample_time, parallel, series, start_value, state)
             if feature_df is None:
                 continue
             feature_df['section'] = key
