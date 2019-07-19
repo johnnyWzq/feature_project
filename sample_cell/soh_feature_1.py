@@ -119,10 +119,11 @@ def get_dqdv_incline(data):
         data['dqdv_incline'].iloc[i] = data['dqdv'].iloc[i] / data['dqdv'].iloc[0]
     return data
     
-def find_ic_feature(df, C_RATE, cnt, sample_time, parallel):
+def find_ic_feature(df, C_RATE, cnt, sample_time, parallel, series):
     """
     """
-    clip_data_list, pos_seq = slip_data_by_volt(df)
+    delta_v = 0.01 * series
+    clip_data_list, pos_seq = slip_data_by_volt(df, delta_v)
     if clip_data_list is None or pos_seq is None:
         return None
     total_data = pd.DataFrame()
@@ -204,7 +205,7 @@ def get_feature_soh(para_dict, mode, bat_name, pro_info, keywords='voltage'):
         train_data_dict = generate_train_data(train_data, state, border_dict['min'], border_dict['max'], 0.02)
         for key, train_data in train_data_dict.items():
             #feature_df = find_ic_feature(train_data, state, C_RATE)
-            feature_df = find_ic_feature(train_data, C_RATE, i, sample_time, parallel)
+            feature_df = find_ic_feature(train_data, C_RATE, i, sample_time, parallel, series)
             if feature_df is None:
                 continue
             feature_df['section'] = key
