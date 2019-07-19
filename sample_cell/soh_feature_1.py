@@ -99,6 +99,8 @@ def outlier_err_dqdv(dqdv_list, method=2):
         dqdv_diff_list = []
         for i in range(1, len(dqdv_list)):
             dqdv_diff_list.append(abs(dqdv_list[i] - dqdv_list[i - 1]))
+        if len(dqdv_diff_list) == 0:
+            return None
         dqdv_diff_mean = 0
         for dqdv_diff in dqdv_diff_list:
             dqdv_diff_mean += dqdv_diff
@@ -117,7 +119,7 @@ def get_dqdv_incline(data):
         data['dqdv_incline'].iloc[i] = data['dqdv'].iloc[i] / data['dqdv'].iloc[0]
     return data
     
-def find_ic_feature(df, C_RATE, cnt):
+def find_ic_feature(df, C_RATE, cnt, sample_time, parallel):
     """
     """
     clip_data_list, pos_seq = slip_data_by_volt(df)
@@ -127,7 +129,7 @@ def find_ic_feature(df, C_RATE, cnt):
     dqdv_list = []
     j = 0
     for clip_data in clip_data_list:
-        dqdv = calc_dqdv(clip_data, 0, C_RATE)
+        dqdv = calc_dqdv(clip_data, 0, C_RATE, sample=sample_time, parallel=parallel)
         if dqdv != 88888888:
             dqdv_list.append(dqdv)
             total_data = total_data.append(rwd.transfer_data(j, clip_data, keywords='stime')) #获得每一个电压数据片对电压的统计值
@@ -181,13 +183,17 @@ def get_feature_soh(para_dict, mode, bat_name, pro_info, keywords='voltage'):
     pro_info = pro_info[pro_info['state'] != 0]
     if len(pro_info) < 1:
         return None
+    sample_time = pro_info['sample_time'].iloc[0]
+    
     C_RATE = para_dict['bat_config']['C_RATE']
     V_RATE = para_dict['bat_config']['V_RATE']
     bat_type = para_dict['bat_config']['bat_type']
+    parallel = para_dict['bat_config']['parallel']
+    series = para_dict['bat_config']['series']
     border_dict = find_border(V_RATE, bat_type)
     print('round %d :starting calculating the features of battery for soh...')
     train_feature = []
-    for i in range(2006, len(pro_info)):
+    for i in range(0, len(pro_info)):
         print('-----------------round %d-------------------'%i)
         state = pro_info['state'].iloc[i]
         df = get_1_pro_data(para_dict, mode, bat_name, pro_info, i)
@@ -198,15 +204,17 @@ def get_feature_soh(para_dict, mode, bat_name, pro_info, keywords='voltage'):
         train_data_dict = generate_train_data(train_data, state, border_dict['min'], border_dict['max'], 0.02)
         for key, train_data in train_data_dict.items():
             #feature_df = find_ic_feature(train_data, state, C_RATE)
-            feature_df = find_ic_feature(train_data, C_RATE, i)
+            feature_df = find_ic_feature(train_data, C_RATE, i, sample_time, parallel)
             if feature_df is None:
                 continue
             feature_df['section'] = key
             feature_df['state'] = state
             feature_df['process_no'] = pro_info['process_no'].iloc[i]
-            feature_df['soh'] = cycle_soh
+            feature_df['soh'] = cycle_soh / C_RATE
             train_feature.append(feature_df)
         del train_data_dict
+    if train_feature == []:
+        return None
     train_feature = pd.concat(tuple(train_feature))
     train_feature = normalize_feature(train_feature, V_RATE, C_RATE, ['voltage'], ['c'])
     train_feature = train_feature.reset_index(drop=True)

@@ -67,7 +67,7 @@ def main(argv):
     if bat_list is not None:
         for bat_name in bat_list:
             
-            para_dict['bat_config'] = fc.get_bat_config(para_dict['bat_info_config'][mode], bat_name, fuzzy=True)
+            para_dict['bat_config'] = fc.get_bat_config(para_dict['bat_info_config'][mode], bat_name, fuzzy=False)
             
             if 'pro_info' in para_dict['mission'] or 'all' in para_dict['mission']:
                 pro_info = rwd.get_pro_info(para_dict, mode, bat_name)
