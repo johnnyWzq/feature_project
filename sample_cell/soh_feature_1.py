@@ -235,6 +235,7 @@ def get_feature_soh(para_dict, mode, bat_name, pro_info, keywords='voltage'):
         df = calc_other_vectors(df, state)
         cycle_soh = df['c'].iloc[-1]
         train_data = get_valid_data(df, state, border_dict['min'], border_dict['max'])#生产需要的训练数据
+        del df
         start_value = get_start_value(border_dict, state)
         train_data_dict = generate_train_data(train_data, state, border_dict['min'], border_dict['max'], 0.02)
         for key, train_data in train_data_dict.items():
