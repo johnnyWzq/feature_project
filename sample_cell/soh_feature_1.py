@@ -70,7 +70,7 @@ def slip_data_by_volt(df, delta_v=0.01, keywords='voltage', method=0, start_valu
                     pos_seq.append(start)
     return clip_data_list, pos_seq
 
-def normalize_feature(data, V_RATE, C_RATE, v_cols, c_cols):
+def normalize_feature(data, V_RATE, C_RATE, T_RATE, v_cols, c_cols, t_cols):
     for col in data.columns:
         for j in v_cols:
             if re.match(j, col):
@@ -78,6 +78,9 @@ def normalize_feature(data, V_RATE, C_RATE, v_cols, c_cols):
         for j in c_cols:
             if re.match(j, col):
                 data[col] = data[col] / C_RATE
+        for k in t_cols:
+            if re.match(k, col):
+                data[col] = data[col] / T_RATE
     return data
 
 def calc_other_vectors(df, state):
@@ -168,7 +171,7 @@ def find_ic_feature(df, C_RATE, cnt, sample_time, parallel, series, start_value,
         return None
     total_data['dqdv'] = dqdv_list
     total_data = get_dqdv_incline(total_data)
-    sel_cols = ['start_tick', 'data_num', 'dqdv', 'dqdv_incline', 'voltage_mean', 'voltage_std', 'voltage_diff_mean', 'voltage_diff_std', 'c']
+    sel_cols = ['start_tick', 'data_num', 'dqdv', 'dqdv_incline', 'voltage_mean', 'voltage_std', 'voltage_diff_mean', 'voltage_diff_std', 'temperature_mean', 'c']
     total_data = total_data[sel_cols]
     total_data = total_data.rename(columns={'data_num': 'clip_num'})
     #total_data['start_tick'] = total_data['start_tick'].apply(str)
@@ -221,6 +224,7 @@ def get_feature_soh(para_dict, mode, bat_name, pro_info, keywords='voltage'):
     sample_time = pro_info['sample_time'].iloc[0]
     C_RATE = para_dict['bat_config']['C_RATE']
     V_RATE = para_dict['bat_config']['V_RATE']
+    T_REFER = para_dict['bat_config']['T_REFER']
     bat_type = para_dict['bat_config']['bat_type']
     parallel = para_dict['bat_config']['parallel']
     series = para_dict['bat_config']['series']
@@ -251,7 +255,7 @@ def get_feature_soh(para_dict, mode, bat_name, pro_info, keywords='voltage'):
     if train_feature == []:
         return None
     train_feature = pd.concat(tuple(train_feature))
-    train_feature = normalize_feature(train_feature, V_RATE, C_RATE, ['voltage'], ['c'])
+    train_feature = normalize_feature(train_feature, V_RATE, C_RATE, T_REFER, ['voltage'], ['c'], ['temperature'])
     train_feature = train_feature.reset_index(drop=True)
     rwd.save_bat_data(train_feature, 'cell_soh_'+bat_name, para_dict, mode)
     return train_feature
