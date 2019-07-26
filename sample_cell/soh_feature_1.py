@@ -120,7 +120,7 @@ def calc_dqdv(df, bias, C_RATE, sample=None, parallel=1):
     #parallel指的是系统中pack的并联数
     """
     if len(df) <= 5:
-        return 88888888, 88888888
+        return 88888888
     df = df.drop_duplicates('stime')
     if sample is None:
         start_time = datetime.datetime.strptime(df['stime'].iloc[0][:19], "%Y-%m-%d %H:%M:%S")
@@ -129,11 +129,11 @@ def calc_dqdv(df, bias, C_RATE, sample=None, parallel=1):
     dqdv = (df['current'].iloc[bias:].sum() / parallel * sample) / (df['voltage'].iloc[-1] - df['voltage'].iloc[0])
     #dqdv = len(df) / (df['voltage'].iloc[-1] - df['voltage'].iloc[0])
     dqdv /= C_RATE
-    bias = regular_dqdv(abs(df['current'].mean())/C_RATE)
-    dqdv_fix = dqdv * (1 + bias)
+    regular = regular_dqdv(abs(df['current'].mean())/C_RATE)
+    dqdv = dqdv * (1 + regular)
     if dqdv == np.inf or dqdv == -np.inf or dqdv <= 0: #电压变化较快，一条数据就超过设定值
-        dqdv, dqdv_fix = 88888888, 88888888
-    return dqdv, dqdv_fix
+        dqdv = 88888888
+    return dqdv
 
 def outlier_err_dqdv(dqdv_list, method=2):
     """
@@ -185,25 +185,20 @@ def find_ic_feature(df, C_RATE, cnt, sample_time, parallel, series, start_value,
         return None
     total_data = pd.DataFrame()
     dqdv_list = []
-    dqdv_fix_list = []
     j = 0
     for clip_data in clip_data_list:
-        dqdv, dqdv_fix = calc_dqdv(clip_data, 0, C_RATE, sample=None, parallel=parallel)
+        dqdv = calc_dqdv(clip_data, 0, C_RATE, sample=None, parallel=parallel)
         if dqdv != 88888888:
             dqdv_list.append(dqdv)
-            dqdv_fix_list.append(dqdv_fix)
             total_data = total_data.append(rwd.transfer_data(j, clip_data, keywords='stime')) #获得每一个电压数据片对电压的统计值
             j += 1 #只有当dqdv有效，j才增加
     del clip_data_list
     dqdv_list = outlier_err_dqdv(dqdv_list)#对异常点进行替换
-    dqdv_fix_list = outlier_err_dqdv(dqdv_fix_list)
     if dqdv_list is None:
         return None
     total_data['dqdv'] = dqdv_list
     total_data = get_dqdv_incline(total_data, 'dqdv')
-    total_data['dqdv_fix'] = dqdv_fix_list
-    total_data = get_dqdv_incline(total_data, 'dqdv_fix')
-    sel_cols = ['start_tick', 'data_num', 'dqdv', 'dqdv_fix', 'dqdv_fix_incline', 'dqdv_incline', 'voltage_mean', 'voltage_std', 'voltage_diff_mean', 'voltage_diff_std', 'temperature_mean', 'c']
+    sel_cols = ['start_tick', 'data_num', 'dqdv', 'dqdv_incline', 'voltage_mean', 'voltage_std', 'voltage_diff_mean', 'voltage_diff_std', 'temperature_mean', 'c']
     total_data = total_data[sel_cols]
     total_data = total_data.rename(columns={'data_num': 'clip_num'})
     #total_data['start_tick'] = total_data['start_tick'].apply(str)
@@ -243,12 +238,12 @@ def generate_train_data(train_data, state, border_min, border_max, bias=0.02):
     """
     """
     train_data_dict = {'%.3f-%.3f'%(border_min[state], border_max[state]): train_data}
-    """
+    
     tmp_min = [i * (1 + bias) for i in border_min]
     train_data_dict['%.3f-%.3f'%(tmp_min[state], border_max[state])] = get_valid_data(train_data, state, tmp_min, border_max)
     tmp_max = [i * (1 - bias) for i in border_max]
     train_data_dict['%.3f-%.3f'%(border_min[state], tmp_max[state])] = get_valid_data(train_data, state, border_min, tmp_max)
-    """
+    
     return train_data_dict
 
 def get_feature_soh(para_dict, mode, bat_name, pro_info, keywords='voltage'):
