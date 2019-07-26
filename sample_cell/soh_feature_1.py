@@ -104,6 +104,8 @@ def regular_dqdv(rate):
         bias = 0.02
     elif rate > 0.3 and rate <= 0.7:
         bias = 0.01
+    elif rate > 0.7 and rate <= 1.2:
+        bias = 0
     elif rate > 1.2 and rate <= 1.5:
         bias = -0.01
     elif rate > 1.5 and rate <= 2:
@@ -121,8 +123,8 @@ def calc_dqdv(df, bias, C_RATE, sample=None, parallel=1):
         return 88888888, 88888888
     df = df.drop_duplicates('stime')
     if sample is None:
-        start_time = datetime.datetime.strptime(df['stime'].iloc[0], "%Y-%m-%d %H:%M:%S")
-        end_time = datetime.datetime.strptime(df['stime'].iloc[1], "%Y-%m-%d %H:%M:%S")
+        start_time = datetime.datetime.strptime(df['stime'].iloc[0][:19], "%Y-%m-%d %H:%M:%S")
+        end_time = datetime.datetime.strptime(df['stime'].iloc[1][:19], "%Y-%m-%d %H:%M:%S")
         sample = (end_time - start_time).seconds
     dqdv = (df['current'].iloc[bias:].sum() / parallel * sample) / (df['voltage'].iloc[-1] - df['voltage'].iloc[0])
     #dqdv = len(df) / (df['voltage'].iloc[-1] - df['voltage'].iloc[0])
@@ -130,7 +132,7 @@ def calc_dqdv(df, bias, C_RATE, sample=None, parallel=1):
     bias = regular_dqdv(abs(df['current'].mean())/C_RATE)
     dqdv_fix = dqdv * (1 + bias)
     if dqdv == np.inf or dqdv == -np.inf or dqdv <= 0: #电压变化较快，一条数据就超过设定值
-        dqdv, dqdv_fix = 88888888
+        dqdv, dqdv_fix = 88888888, 88888888
     return dqdv, dqdv_fix
 
 def outlier_err_dqdv(dqdv_list, method=2):
@@ -200,7 +202,8 @@ def find_ic_feature(df, C_RATE, cnt, sample_time, parallel, series, start_value,
     total_data['dqdv'] = dqdv_list
     total_data = get_dqdv_incline(total_data, 'dqdv')
     total_data['dqdv_fix'] = dqdv_fix_list
-    sel_cols = ['start_tick', 'data_num', 'dqdv', 'dqdv_fix', 'dqdv_incline', 'voltage_mean', 'voltage_std', 'voltage_diff_mean', 'voltage_diff_std', 'temperature_mean', 'c']
+    total_data = get_dqdv_incline(total_data, 'dqdv_fix')
+    sel_cols = ['start_tick', 'data_num', 'dqdv', 'dqdv_fix', 'dqdv_fix_incline', 'dqdv_incline', 'voltage_mean', 'voltage_std', 'voltage_diff_mean', 'voltage_diff_std', 'temperature_mean', 'c']
     total_data = total_data[sel_cols]
     total_data = total_data.rename(columns={'data_num': 'clip_num'})
     #total_data['start_tick'] = total_data['start_tick'].apply(str)
@@ -262,7 +265,7 @@ def get_feature_soh(para_dict, mode, bat_name, pro_info, keywords='voltage'):
     border_dict = find_border(V_RATE, bat_type)
     print('starting calculating the features of battery for soh...')
     train_feature = []
-    for i in range(0, len(pro_info), 10):
+    for i in range(0, len(pro_info), 1):
         print('-----------------round %d-------------------'%i)
         state = pro_info['state'].iloc[i]
         df = get_1_pro_data(para_dict, mode, bat_name, pro_info, i)
