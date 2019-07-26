@@ -98,22 +98,40 @@ def calc_other_vectors(df, state):
         #df['e'] = 0
     return df
 
+def regular_dqdv(rate):
+    bias = 0
+    if rate <= 0.3:
+        bias = 0.02
+    elif rate > 0.3 and rate <= 0.7:
+        bias = 0.01
+    elif rate > 1.2 and rate <= 1.5:
+        bias = -0.01
+    elif rate > 1.5 and rate <= 2:
+        bias = -0.02
+    else:
+        bias = -0.03
+    return bias
+        
 def calc_dqdv(df, bias, C_RATE, sample=None, parallel=1):
     """
     #计算dq/dv，由于没有dq，使用i代替，但需要考虑采样频率换算成1s
     #parallel指的是系统中pack的并联数
     """
+    if len(df) <= 5:
+        return 88888888
     df = df.drop_duplicates('stime')
     if sample is None:
         start_time = datetime.datetime.strptime(df['stime'].iloc[0], "%Y-%m-%d %H:%M:%S")
         end_time = datetime.datetime.strptime(df['stime'].iloc[1], "%Y-%m-%d %H:%M:%S")
         sample = (end_time - start_time).seconds
-    dqdv = (df['current'].sum() / parallel * sample) / (df['voltage'].iloc[-1] - df['voltage'].iloc[0])
+    dqdv = (df['current'].iloc[bias:].sum() / parallel * sample) / (df['voltage'].iloc[-1] - df['voltage'].iloc[0])
     #dqdv = len(df) / (df['voltage'].iloc[-1] - df['voltage'].iloc[0])
     dqdv /= C_RATE
+    bias = regular_dqdv(abs(df['current'].mean())/C_RATE)
+    dqdv_fix = dqdv * (1 + bias)
     if dqdv == np.inf or dqdv == -np.inf or dqdv == 0: #电压变化较快，一条数据就超过设定值
-        dqdv = 88888888
-    return dqdv
+        dqdv, dqdv_fix = 88888888
+    return dqdv, dqdv_fix
 
 def outlier_err_dqdv(dqdv_list, method=2):
     """
@@ -150,10 +168,10 @@ def outlier_err_dqdv(dqdv_list, method=2):
                 
     return dqdv_list
     
-def get_dqdv_incline(data):
-    data['dqdv_incline'] = 1
+def get_dqdv_incline(data, col_name):
+    data[col_name + '_incline'] = 1
     for i in range(1, len(data)):
-        data['dqdv_incline'].iloc[i] = data['dqdv'].iloc[i] / data['dqdv'].iloc[0]
+        data[col_name + '_incline'].iloc[i] = data[col_name].iloc[i] / data[col_name].iloc[0]
     return data
     
 def find_ic_feature(df, C_RATE, cnt, sample_time, parallel, series, start_value, direction):
@@ -165,20 +183,24 @@ def find_ic_feature(df, C_RATE, cnt, sample_time, parallel, series, start_value,
         return None
     total_data = pd.DataFrame()
     dqdv_list = []
+    dqdv_fix_list = []
     j = 0
     for clip_data in clip_data_list:
-        dqdv = calc_dqdv(clip_data, 0, C_RATE, sample=None, parallel=parallel)
+        dqdv, dqdv_fix = calc_dqdv(clip_data, 0, C_RATE, sample=None, parallel=parallel)
         if dqdv != 88888888:
             dqdv_list.append(dqdv)
+            dqdv_fix_list.append(dqdv_fix)
             total_data = total_data.append(rwd.transfer_data(j, clip_data, keywords='stime')) #获得每一个电压数据片对电压的统计值
             j += 1 #只有当dqdv有效，j才增加
     del clip_data_list
     dqdv_list = outlier_err_dqdv(dqdv_list)#对异常点进行替换
+    dqdv_fix_list = outlier_err_dqdv(dqdv_fix_list)
     if dqdv_list is None:
         return None
     total_data['dqdv'] = dqdv_list
-    total_data = get_dqdv_incline(total_data)
-    sel_cols = ['start_tick', 'data_num', 'dqdv', 'dqdv_incline', 'voltage_mean', 'voltage_std', 'voltage_diff_mean', 'voltage_diff_std', 'temperature_mean', 'c']
+    total_data = get_dqdv_incline(total_data, 'dqdv')
+    total_data['dqdv_fix'] = dqdv_fix_list
+    sel_cols = ['start_tick', 'data_num', 'dqdv', 'dqdv_fix', 'dqdv_incline', 'voltage_mean', 'voltage_std', 'voltage_diff_mean', 'voltage_diff_std', 'temperature_mean', 'c']
     total_data = total_data[sel_cols]
     total_data = total_data.rename(columns={'data_num': 'clip_num'})
     #total_data['start_tick'] = total_data['start_tick'].apply(str)
@@ -240,7 +262,7 @@ def get_feature_soh(para_dict, mode, bat_name, pro_info, keywords='voltage'):
     border_dict = find_border(V_RATE, bat_type)
     print('starting calculating the features of battery for soh...')
     train_feature = []
-    for i in range(0, len(pro_info), 100):
+    for i in range(0, len(pro_info), 10):
         print('-----------------round %d-------------------'%i)
         state = pro_info['state'].iloc[i]
         df = get_1_pro_data(para_dict, mode, bat_name, pro_info, i)
