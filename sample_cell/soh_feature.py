@@ -527,7 +527,7 @@ def get_feature_soh(para_dict, mode, bat_name, pro_info, keywords='voltage'):
         train_feature.append(feature_df)
         del train_data_dict
     train_feature = pd.concat(tuple(train_feature))
-    rwd.save_train_xlsx(train_feature, 'cell_soh_'+bat_name, './data/')
+    rwd.save_train_xlsx(train_feature, 'cell_soh1_'+bat_name, './data/')
     return train_feature
 
 

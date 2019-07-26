@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+ #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 Created on Wed Jun 12 14:19:40 2019
@@ -94,7 +94,7 @@ def main(argv):
             if 'dqdv_calc' in para_dict['mission'] or 'all' in para_dict['mission']:
                 pro_info = rwd.read_bat_data(para_dict, mode, para_dict['log_info']+'_'+bat_name)
                 feature = dc.get_dqdv_data(para_dict, mode, bat_name, pro_info)
-                rwd.save_pro_info(feature, 'cell_dqdv_'+bat_name, para_dict, mode)
+                #rwd.save_pro_info(feature, 'cell_dqdv_'+bat_name, para_dict, mode)
     else:
          print('there is no bat!')
          

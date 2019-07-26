@@ -12,6 +12,7 @@ import pandas as pd
 import numpy as np
 import re
 import rw_bat_data as rwd
+import datetime
 
     
 def get_1_pro_data(para_dict, mode, table_name, pro_info, pro_no, condition1='start_time', condition2='end_time', t_keywords='stime'):
@@ -97,14 +98,20 @@ def calc_other_vectors(df, state):
         #df['e'] = 0
     return df
 
-def calc_dqdv(df, bias, C_RATE, sample=1, parallel=1):
+def calc_dqdv(df, bias, C_RATE, sample=None, parallel=1):
     """
     #计算dq/dv，由于没有dq，使用i代替，但需要考虑采样频率换算成1s
     #parallel指的是系统中pack的并联数
     """
-    dqdv = (df['current'].sum() * sample) / (df['voltage'].iloc[-1] - df['voltage'].iloc[0])
-    dqdv = dqdv / C_RATE / parallel
-    if dqdv == np.inf or dqdv == -np.inf: #电压变化较快，一条数据就超过设定值
+    df = df.drop_duplicates('stime')
+    if sample is None:
+        start_time = datetime.datetime.strptime(df['stime'].iloc[0], "%Y-%m-%d %H:%M:%S")
+        end_time = datetime.datetime.strptime(df['stime'].iloc[1], "%Y-%m-%d %H:%M:%S")
+        sample = (end_time - start_time).seconds
+    dqdv = (df['current'].sum() / parallel * sample) / (df['voltage'].iloc[-1] - df['voltage'].iloc[0])
+    #dqdv = len(df) / (df['voltage'].iloc[-1] - df['voltage'].iloc[0])
+    dqdv /= C_RATE
+    if dqdv == np.inf or dqdv == -np.inf or dqdv == 0: #电压变化较快，一条数据就超过设定值
         dqdv = 88888888
     return dqdv
 
@@ -160,7 +167,7 @@ def find_ic_feature(df, C_RATE, cnt, sample_time, parallel, series, start_value,
     dqdv_list = []
     j = 0
     for clip_data in clip_data_list:
-        dqdv = calc_dqdv(clip_data, 0, C_RATE, sample=sample_time, parallel=parallel)
+        dqdv = calc_dqdv(clip_data, 0, C_RATE, sample=None, parallel=parallel)
         if dqdv != 88888888:
             dqdv_list.append(dqdv)
             total_data = total_data.append(rwd.transfer_data(j, clip_data, keywords='stime')) #获得每一个电压数据片对电压的统计值
@@ -211,10 +218,12 @@ def generate_train_data(train_data, state, border_min, border_max, bias=0.02):
     """
     """
     train_data_dict = {'%.3f-%.3f'%(border_min[state], border_max[state]): train_data}
+    """
     tmp_min = [i * (1 + bias) for i in border_min]
     train_data_dict['%.3f-%.3f'%(tmp_min[state], border_max[state])] = get_valid_data(train_data, state, tmp_min, border_max)
     tmp_max = [i * (1 - bias) for i in border_max]
     train_data_dict['%.3f-%.3f'%(border_min[state], tmp_max[state])] = get_valid_data(train_data, state, border_min, tmp_max)
+    """
     return train_data_dict
 
 def get_feature_soh(para_dict, mode, bat_name, pro_info, keywords='voltage'):
@@ -231,7 +240,7 @@ def get_feature_soh(para_dict, mode, bat_name, pro_info, keywords='voltage'):
     border_dict = find_border(V_RATE, bat_type)
     print('starting calculating the features of battery for soh...')
     train_feature = []
-    for i in range(0, len(pro_info)):
+    for i in range(0, len(pro_info), 100):
         print('-----------------round %d-------------------'%i)
         state = pro_info['state'].iloc[i]
         df = get_1_pro_data(para_dict, mode, bat_name, pro_info, i)

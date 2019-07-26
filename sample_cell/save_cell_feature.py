@@ -24,7 +24,7 @@ elif 'cell_stdv' in table_list[0]:
     cut = 10
 elif 'cell_soh' in table_list[0]:
     file_name = 'cell_soh'
-    cut = 8
+    cut = 9
 if table_list is not None:
     data = []
     data_dir = para_dict['processed_data_dir'][mode]
@@ -33,9 +33,10 @@ if table_list is not None:
     writer = pd.ExcelWriter(os.path.join(data_dir, file_name+'.xlsx'))
     for table_name in table_list:
         v = rwd.read_bat_data(para_dict, mode, table_name)
-        v['bat_id'] = table_name
+        v['bat_id'] = table_name[cut:]
         v = v.drop(columns='index')
         v.to_excel(writer, table_name[cut:])
+        rwd.save_bat_data(v, table_name, para_dict, mode)
         data.append(v)
     df = pd.concat(tuple(data))
     rwd.save_bat_data(df, file_name, para_dict, mode)
