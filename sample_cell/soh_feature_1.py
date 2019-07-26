@@ -118,7 +118,7 @@ def calc_dqdv(df, bias, C_RATE, sample=None, parallel=1):
     #parallel指的是系统中pack的并联数
     """
     if len(df) <= 5:
-        return 88888888
+        return 88888888, 88888888
     df = df.drop_duplicates('stime')
     if sample is None:
         start_time = datetime.datetime.strptime(df['stime'].iloc[0], "%Y-%m-%d %H:%M:%S")
@@ -129,7 +129,7 @@ def calc_dqdv(df, bias, C_RATE, sample=None, parallel=1):
     dqdv /= C_RATE
     bias = regular_dqdv(abs(df['current'].mean())/C_RATE)
     dqdv_fix = dqdv * (1 + bias)
-    if dqdv == np.inf or dqdv == -np.inf or dqdv == 0: #电压变化较快，一条数据就超过设定值
+    if dqdv == np.inf or dqdv == -np.inf or dqdv <= 0: #电压变化较快，一条数据就超过设定值
         dqdv, dqdv_fix = 88888888
     return dqdv, dqdv_fix
 
@@ -288,7 +288,7 @@ def get_feature_soh(para_dict, mode, bat_name, pro_info, keywords='voltage'):
     train_feature = pd.concat(tuple(train_feature))
     train_feature = normalize_feature(train_feature, V_RATE, C_RATE, T_REFER, ['voltage'], ['c'], ['temperature'])
     train_feature = train_feature.reset_index(drop=True)
-    rwd.save_bat_data(train_feature, 'cell_soh_'+bat_name, para_dict, mode)
+    rwd.save_bat_data(train_feature, 't_cell_soh_'+bat_name, para_dict, mode)
     return train_feature
 
 def test():
