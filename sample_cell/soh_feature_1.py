@@ -129,6 +129,7 @@ def calc_dqdv(df, bias, C_RATE, sample=None, parallel=1):
     dqdv = (df['current'].iloc[bias:].sum() / parallel * sample) / (df['voltage'].iloc[-1] - df['voltage'].iloc[0])
     #dqdv = len(df) / (df['voltage'].iloc[-1] - df['voltage'].iloc[0])
     dqdv /= C_RATE
+    regular = 0
     regular = regular_dqdv(abs(df['current'].mean())/C_RATE)
     dqdv = dqdv * (1 + regular)
     if dqdv == np.inf or dqdv == -np.inf or dqdv <= 0: #电压变化较快，一条数据就超过设定值
@@ -260,7 +261,7 @@ def get_feature_soh(para_dict, mode, bat_name, pro_info, keywords='voltage'):
     border_dict = find_border(V_RATE, bat_type)
     print('starting calculating the features of battery for soh...')
     train_feature = []
-    for i in range(0, len(pro_info), 1):
+    for i in range(0, len(pro_info), 10):
         print('-----------------round %d-------------------'%i)
         state = pro_info['state'].iloc[i]
         df = get_1_pro_data(para_dict, mode, bat_name, pro_info, i)

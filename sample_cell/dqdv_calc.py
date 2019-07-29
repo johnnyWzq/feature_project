@@ -18,9 +18,9 @@ def normalize_feature(data, V_RATE, v_cols):
                 data[col+'_nml'] = data[col] / V_RATE
     return data
 
-def find_ic(df, C_RATE, cnt, sample_time, parallel, series):
+def find_ic(df, C_RATE, cnt, sample_time, parallel, series, start_value, direction)):
     delta_v = 0.01 * series
-    clip_data_list, pos_seq = sf1.slip_data_by_volt(df, delta_v)
+    clip_data_list, pos_seq = sf1.clip_data_list, pos_seq = slip_data_by_volt(df, delta_v, method=1, start_value= start_value, direction=direction)
     total_data = pd.DataFrame()
     dqdv_list = []
     j = 0
@@ -33,7 +33,7 @@ def find_ic(df, C_RATE, cnt, sample_time, parallel, series):
     del clip_data_list
     dqdv_list = sf1.outlier_err_dqdv(dqdv_list)#对异常点进行替换
     total_data['dqdv'] = dqdv_list
-    return total_data[['dqdv', 'voltage_mean']]
+    return total_data[['dqdv', 'voltage_mean', 'voltage_mean_nml']]
 
 def get_dqdv_data(para_dict, mode, bat_name, pro_info, keywords='voltage'):
     pro_info = pro_info[pro_info['state'] != 0]
@@ -42,18 +42,21 @@ def get_dqdv_data(para_dict, mode, bat_name, pro_info, keywords='voltage'):
     sample_time = pro_info['sample_time'].iloc[0]
     C_RATE = para_dict['bat_config']['C_RATE']
     V_RATE = para_dict['bat_config']['V_RATE']
-    #bat_type = para_dict['bat_config']['bat_type']
+    T_REFER = para_dict['bat_config']['T_REFER']
+    bat_type = para_dict['bat_config']['bat_type']
     parallel = para_dict['bat_config']['parallel']
     series = para_dict['bat_config']['series']
+    border_dict = dict('min'=[2.5, 2.5], 'max'=[4.2, 4.2])
     print('starting calculating the features of battery for soh...')
     dqdv_data = []
-    for i in range(0, len(pro_info)):
+    for i in range(0, len(pro_info), 100):
         print('-----------------round %d-------------------'%i)
         state = pro_info['state'].iloc[i]
         df = sf1.get_1_pro_data(para_dict, mode, bat_name, pro_info, i)
         df = df.reset_index(drop=True)
         df = sf1.calc_other_vectors(df, state)
-        feature_df = find_ic(df, C_RATE, i, sample_time, parallel, series)
+        start_value = get_start_value(border_dict, state)
+        feature_df = find_ic(df, C_RATE, i, sample_time, parallel, series, start_value, state)
         if feature_df is None:
             continue
         feature_df = normalize_feature(feature_df, V_RATE, ['voltage'])
