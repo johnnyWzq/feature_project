@@ -53,7 +53,7 @@ def init_data_para():
                              }
     
     para_dict['mission'] = ['cell_v_drop', 'cell_stdv', 'soh_feature', 'dqdv_calc']
-    para_dict['mission'] = ['soh_feature']#['all', 'pro_info', 'cell_v_drop']
+    para_dict['mission'] = ['pro_info']#['all', 'pro_info', 'cell_v_drop']
     return para_dict
 
 def main(argv):

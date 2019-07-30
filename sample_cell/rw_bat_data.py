@@ -39,7 +39,7 @@ def get_pro_info(para_dict, mode, table_name):
     total = 10
     bar = pbar.Processbar(total)
     showbar = pbar.showbar(bar)
-    df = gf.find_sequence(table_name, showbar, total=total, **para_dict)
+    df = gf.find_sequence(table_name, showbar, total=total, charge_time=8, discharge_time=8, **para_dict)
     bar.finish()
     return df
 
