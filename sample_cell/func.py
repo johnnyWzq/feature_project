@@ -26,7 +26,7 @@ def deal_other_argv(argv, para_dict):
     1:bat_mode; 2:bat_type; 3:bat-structure; 4:bat-year; 5:score_key
     """
     i = 0
-    mission = ['all', 'pro_info', 'cell_v_drop', 'cell_stdv', 'soh_feature']
+    mission = ['all', 'pro_info', 'cell_v_drop', 'cell_stdv', 'soh_feature', 'dqdv_calc']
     for ar in argv:
         if i == 2: #
             regx = r'\-[a-zA-Z\_]{3,20}'

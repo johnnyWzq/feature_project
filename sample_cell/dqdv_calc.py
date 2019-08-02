@@ -73,7 +73,7 @@ def get_dqdv_data(para_dict, mode, bat_name, pro_info, keywords='voltage'):
     bat_type = para_dict['bat_config']['bat_type']
     parallel = para_dict['bat_config']['parallel']
     series = para_dict['bat_config']['series']
-    border_dict = {'min': [0, 2.5, 2.5], 'max': [0, 4.2, 4.2]}
+    border_dict = {'min': [0, 2.5, 2.5], 'max': [0, 4.3, 4.3]}
     print('starting calculating the features of battery for soh...')
     dqdv_data = pd.DataFrame()
     for i in range(0, len(pro_info)):
@@ -95,8 +95,8 @@ def get_dqdv_data(para_dict, mode, bat_name, pro_info, keywords='voltage'):
     if dqdv_data == []:
         return None
     #dqdv_data = pd.concat(tuple(dqdv_data))
-    dqdv_data = normalize_feature(dqdv_data, V_RATE, ['voltage'])
-    dqdv_data = dqdv_data.reset_index(drop=True)
+    #dqdv_data = normalize_feature(dqdv_data, V_RATE, ['voltage'])
+    #dqdv_data = dqdv_data.reset_index(drop=True)
     rwd.save_bat_data(dqdv_data, 'cell_dqdv_'+bat_name, para_dict, mode)
     return dqdv_data
 

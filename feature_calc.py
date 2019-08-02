@@ -53,7 +53,7 @@ def init_data_para():
                              }
     
     para_dict['mission'] = ['cell_v_drop', 'cell_stdv', 'soh_feature', 'dqdv_calc']
-    para_dict['mission'] = []#['all', 'pro_info', 'cell_v_drop']
+    para_dict['mission'] = ['dqdv_calc']#['all', 'pro_info', 'cell_v_drop']
     return para_dict
 
 def main(argv):
@@ -94,7 +94,7 @@ def main(argv):
             if 'dqdv_calc' in para_dict['mission'] or 'all' in para_dict['mission']:
                 pro_info = rwd.read_bat_data(para_dict, mode, para_dict['log_info']+'_'+bat_name)
                 feature = dc.get_dqdv_data(para_dict, mode, bat_name, pro_info)
-                #rwd.save_pro_info(feature, 'cell_dqdv_'+bat_name, para_dict, mode)
+                rwd.save_pro_info(feature, 'cell_dqdv_'+bat_name, para_dict, mode)
     else:
          print('there is no bat!')
          
