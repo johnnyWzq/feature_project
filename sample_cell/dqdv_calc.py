@@ -56,8 +56,10 @@ def find_ic(df, C_RATE, cnt, sample_time, parallel, series, start_value, directi
             j += 1 #只有当dqdv有效，j才增加
     del clip_data_list
     dqdv_list = sf1.outlier_err_dqdv(dqdv_list)#对异常点进行替换
+    if dqdv_list is None:
+        return None
     total_data['dqdv'] = dqdv_list
-    total_data['voltage_mean'] = total_data['voltage_mean'].round(5)
+    total_data['voltage_mean'] = total_data['voltage_mean'].round(2)
     return total_data[['dqdv', 'voltage_mean']]
 
 def get_dqdv_data(para_dict, mode, bat_name, pro_info, keywords='voltage'):
@@ -73,8 +75,8 @@ def get_dqdv_data(para_dict, mode, bat_name, pro_info, keywords='voltage'):
     series = para_dict['bat_config']['series']
     border_dict = {'min': [0, 2.5, 2.5], 'max': [0, 4.2, 4.2]}
     print('starting calculating the features of battery for soh...')
-    dqdv_data = []
-    for i in range(0, len(pro_info), 100):
+    dqdv_data = pd.DataFrame()
+    for i in range(0, len(pro_info)):
         print('-----------------round %d-------------------'%i)
         state = pro_info['state'].iloc[i]
         df = sf1.get_1_pro_data(para_dict, mode, bat_name, pro_info, i)
@@ -89,10 +91,10 @@ def get_dqdv_data(para_dict, mode, bat_name, pro_info, keywords='voltage'):
         feature_df = feature_df.rename(columns={'dqdv': str(state)+'_'+str(pro_info['process_no'].iloc[i])})
         feature_df = feature_df.sort_index()
         del df
-        dqdv_data.append(feature_df)
+        dqdv_data = dqdv_data.merge(feature_df, left_index=True, right_index=True, how='outer')
     if dqdv_data == []:
         return None
-    dqdv_data = pd.concat(tuple(dqdv_data))
+    #dqdv_data = pd.concat(tuple(dqdv_data))
     dqdv_data = normalize_feature(dqdv_data, V_RATE, ['voltage'])
     dqdv_data = dqdv_data.reset_index(drop=True)
     rwd.save_bat_data(dqdv_data, 'cell_dqdv_'+bat_name, para_dict, mode)
