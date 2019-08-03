@@ -76,7 +76,7 @@ def get_dqdv_data(para_dict, mode, bat_name, pro_info, keywords='voltage'):
     border_dict = {'min': [0, 2.5, 2.5], 'max': [0, 4.3, 4.3]}
     print('starting calculating the features of battery for soh...')
     dqdv_data = pd.DataFrame()
-    for i in range(0, len(pro_info)):
+    for i in range(1400, 1404):#len(pro_info)):
         print('-----------------round %d-------------------'%i)
         state = pro_info['state'].iloc[i]
         df = sf1.get_1_pro_data(para_dict, mode, bat_name, pro_info, i)
@@ -92,8 +92,6 @@ def get_dqdv_data(para_dict, mode, bat_name, pro_info, keywords='voltage'):
         feature_df = feature_df.sort_index()
         del df
         dqdv_data = dqdv_data.merge(feature_df, left_index=True, right_index=True, how='outer')
-    if dqdv_data == []:
-        return None
     #dqdv_data = pd.concat(tuple(dqdv_data))
     #dqdv_data = normalize_feature(dqdv_data, V_RATE, ['voltage'])
     #dqdv_data = dqdv_data.reset_index(drop=True)
