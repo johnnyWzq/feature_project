@@ -32,7 +32,7 @@ def calc_dqdv(df, bias, C_RATE, sample=None, parallel=1):
         start_time = datetime.datetime.strptime(df['stime'].iloc[0][:19], "%Y-%m-%d %H:%M:%S")
         end_time = datetime.datetime.strptime(df['stime'].iloc[1][:19], "%Y-%m-%d %H:%M:%S")
         sample = (end_time - start_time).seconds
-    dqdv = (df['current'].iloc[bias:].sum() / parallel * sample) / (df['voltage'].iloc[-1] - df['voltage'].iloc[0])
+    dqdv = (df['current'].sum() / parallel * sample) / (df['voltage'].iloc[-1] - df['voltage'].iloc[0])
     #dqdv = len(df) / (df['voltage'].iloc[-1] - df['voltage'].iloc[0])
     dqdv /= C_RATE
     regular = 0
@@ -76,7 +76,7 @@ def get_dqdv_data(para_dict, mode, bat_name, pro_info, keywords='voltage'):
     border_dict = {'min': [0, 2.5, 2.5], 'max': [0, 4.3, 4.3]}
     print('starting calculating the features of battery for soh...')
     dqdv_data = pd.DataFrame()
-    for i in range(1400, 1404):#len(pro_info)):
+    for i in range(0, len(pro_info)):
         print('-----------------round %d-------------------'%i)
         state = pro_info['state'].iloc[i]
         df = sf1.get_1_pro_data(para_dict, mode, bat_name, pro_info, i)
@@ -95,6 +95,9 @@ def get_dqdv_data(para_dict, mode, bat_name, pro_info, keywords='voltage'):
     #dqdv_data = pd.concat(tuple(dqdv_data))
     #dqdv_data = normalize_feature(dqdv_data, V_RATE, ['voltage'])
     #dqdv_data = dqdv_data.reset_index(drop=True)
+    dqdv_data = dqdv_data.T
+    dqdv_data = dqdv_data.reset_index(drop=False)
+    dqdv_data = dqdv_data.rename(columns={'index': 'annotate'})
     rwd.save_bat_data(dqdv_data, 'cell_dqdv_'+bat_name, para_dict, mode)
     return dqdv_data
 
