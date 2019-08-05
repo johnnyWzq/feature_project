@@ -87,15 +87,18 @@ def get_dqdv_data(para_dict, mode, bat_name, pro_info, keywords='voltage'):
         if feature_df is None:
             continue
         #feature_df = normalize_feature(feature_df, V_RATE, ['voltage'])
+        feature_df = feature_df.drop_duplicates('voltage_mean')
         feature_df = feature_df.set_index('voltage_mean', drop=True)
         feature_df = feature_df.rename(columns={'dqdv': str(state)+'_'+str(pro_info['process_no'].iloc[i])})
         feature_df = feature_df.sort_index()
+        feature_df = feature_df.T
         del df
-        dqdv_data = dqdv_data.merge(feature_df, left_index=True, right_index=True, how='outer')
-    #dqdv_data = pd.concat(tuple(dqdv_data))
+        #dqdv_data.append(feature_df)
+        #dqdv_data = dqdv_data.merge(feature_df, left_index=True, right_index=True, how='outer')
+        dqdv_data = pd.concat([dqdv_data, feature_df], axis=0)
     #dqdv_data = normalize_feature(dqdv_data, V_RATE, ['voltage'])
     #dqdv_data = dqdv_data.reset_index(drop=True)
-    dqdv_data = dqdv_data.T
+    #dqdv_data = dqdv_data.T
     dqdv_data = dqdv_data.reset_index(drop=False)
     dqdv_data = dqdv_data.rename(columns={'index': 'annotate'})
     rwd.save_bat_data(dqdv_data, 'cell_dqdv_'+bat_name, para_dict, mode)
